@@ -11,11 +11,33 @@ venv/
 
 # 环境配置（敏感信息）
 .env
-*.env.local
-*.env.production
-.env.secret
+.env.local
+.env.production
+.env.testing
+.env.development
+.env.staging
+*.env.secret
 config/.env*
 *.env.sprint*
+
+# API密钥文件（高安全性）
+*api_key*
+*secret*
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+access_key*
+private_key*
+certificate*
+
+# 本地配置文件（个人配置）
+local_config/
+*.local.*
+user_config.*
+personal_config.*
+my_config.*
 
 # 测试临时文件
 *.wav
@@ -93,3 +115,50 @@ dmypy.json
 *.new
 *.old
 *.unused
+
+# 备份和归档文件（防止意外提交敏感数据）
+*.backup.*
+*.bak.*
+*.archive.*
+*_backup_*
+*.zip
+*.tar.gz
+*.rar
+
+# 系统和进程文件
+*.pid
+*.lock
+.DS_Store?
+Thumbs.db
+*.lnk
+
+# 安全和审计文件
+*.audit
+*.security
+*.scan
+*.virus*
+
+# 网络和代理配置
+proxy_*
+*.proxy
+network_config.*
+
+# 云服务配置
+aws_*
+azure_*
+gcp_*
+cloud_config.*
+service_account.*
+
+# 数据库文件（可能包含敏感信息）
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+data_*
+
+# 监控和分析文件
+metrics_*
+monitoring_*
+analytics_*
+performance_*
