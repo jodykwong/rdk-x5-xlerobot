@@ -144,8 +144,8 @@ set_temp_env() {
     fi
 
     if [ -z "$ALIYUN_NLS_APPKEY" ]; then
-        read -p "请输入阿里云NLS AppKey (默认: 4G5BCMccTCW8nC8w): " appkey
-        appkey=${appkey:-"4G5BCMccTCW8nC8w"}
+        read -p "请输入阿里云NLS AppKey (默认: YOUR_NLS_APPKEY): " appkey
+        appkey=${appkey:-"YOUR_NLS_APPKEY"}
         if [ -n "$appkey" ]; then
             export ALIYUN_NLS_APPKEY="$appkey"
             log_success "✅ ALIYUN_NLS_APPKEY 已设置"
@@ -231,7 +231,7 @@ fi
 # Set default values if not set in .env
 export ALIBABA_CLOUD_ACCESS_KEY_ID="${ALIBABA_CLOUD_ACCESS_KEY_ID:-}"
 export ALIBABA_CLOUD_ACCESS_KEY_SECRET="${ALIBABA_CLOUD_ACCESS_KEY_SECRET:-}"
-export ALIYUN_NLS_APPKEY="${ALIYUN_NLS_APPKEY:-4G5BCMccTCW8nC8w}"
+export ALIYUN_NLS_APPKEY="${ALIYUN_NLS_APPKEY:-YOUR_NLS_APPKEY}"
 export PYTHONPATH="${PYTHONPATH:-/home/sunrise/xlerobot/src}"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
 EOF
@@ -261,7 +261,7 @@ ALIBABA_CLOUD_ACCESS_KEY_ID=
 ALIBABA_CLOUD_ACCESS_KEY_SECRET=
 
 # 阿里云语音服务AppKey (已提供默认值)
-ALIYUN_NLS_APPKEY=4G5BCMccTCW8nC8w
+ALIYUN_NLS_APPKEY=YOUR_NLS_APPKEY
 
 # 其他配置 (通常不需要修改)
 PYTHONPATH=/home/sunrise/xlerobot/src

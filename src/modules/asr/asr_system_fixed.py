@@ -50,7 +50,7 @@ class SimpleASRSystem:
 
     def __init__(self):
         # ASR服务配置
-        app_key = os.environ.get("ALIYUN_NLS_APPKEY", "4G5BCMccTCW8nC8w")
+        app_key = os.environ.get("ALIYUN_NLS_APPKEY", "YOUR_NLS_APPKEY")
         access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
         access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "")
 

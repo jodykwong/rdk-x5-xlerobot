@@ -688,7 +688,7 @@ class AliyunTTSWebSocketClient(WebSocketTTSService):
         super().__init__(
             access_key_id=config.get('access_key_id', os.getenv('ALIBABA_CLOUD_ACCESS_KEY_ID', '')),
             access_key_secret=config.get('access_key_secret', os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET', '')),
-            app_key=config.get('app_key', os.getenv('ALIYUN_NLS_APPKEY', '4G5BCMccTCW8nC8w')),
+            app_key=config.get('app_key', os.getenv('ALIYUN_NLS_APPKEY', 'YOUR_NLS_APPKEY')),
             enable_streaming=config.get('enable_streaming', True),
             enable_playback=config.get('enable_playback', False)  # 默认关闭播放以保持兼容性
         )

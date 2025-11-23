@@ -56,7 +56,7 @@ class AliyunTTSWebSocketEngine:
         self.access_key_secret = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET',
                                          self.config.get('access_key_secret', ''))
         self.app_key = os.getenv('ALIYUN_NLS_APPKEY',
-                                self.config.get('app_key', '4G5BCMccTCW8nC8w'))
+                                self.config.get('app_key', 'YOUR_NLS_APPKEY'))
 
         # WebSocket配置（根据架构文档）
         self.endpoint = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1"

@@ -28,9 +28,9 @@ import re
 from pathlib import Path
 
 # 严禁Mock数据 - 只使用真实环境变量
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-os.environ["ALIYUN_NLS_APPKEY"] = "4G5BCMccTCW8nC8w"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "YOUR_ACCESS_KEY_ID"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "YOUR_ACCESS_KEY_SECRET"
+os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
 
 # 设置路径
 sys.path.insert(0, '/home/sunrise/xlerobot/src')

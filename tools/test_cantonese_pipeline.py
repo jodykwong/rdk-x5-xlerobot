@@ -15,9 +15,9 @@ from pathlib import Path
 from datetime import datetime
 
 # ============ 配置区域 ============
-ACCESS_KEY_ID = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-ACCESS_KEY_SECRET = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-ASR_APPKEY = "4G5BCMccTCW8nC8w"
+ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
+ACCESS_KEY_SECRET = "YOUR_ACCESS_KEY_SECRET"
+ASR_APPKEY = "YOUR_NLS_APPKEY"
 QWEN_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "")
 
 # 音频参数

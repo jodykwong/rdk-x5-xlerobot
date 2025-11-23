@@ -18,7 +18,7 @@ config:
 # ============================================================================
 authentication:
   # 从阿里云控制台获取的项目AppKey
-  appkey: "4G5BCMccTCW8nC8w"  # ✅ 已配置
+  appkey: "YOUR_NLS_APPKEY"  # ✅ 已配置
 
   # Token相关配置
   token:

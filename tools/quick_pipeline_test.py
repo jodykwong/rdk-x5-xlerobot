@@ -19,9 +19,9 @@ print("🚀 快速粤语ASR → TTS 验证测试")
 print("=" * 60)
 
 # ============ 配置 ============
-ACCESS_KEY_ID = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-ACCESS_KEY_SECRET = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-ASR_APPKEY = "4G5BCMccTCW8nC8w"
+ACCESS_KEY_ID = "YOUR_ACCESS_KEY_ID"
+ACCESS_KEY_SECRET = "YOUR_ACCESS_KEY_SECRET"
+ASR_APPKEY = "YOUR_NLS_APPKEY"
 
 # ============ 测试1: Token获取 ============
 print("\n🔑 测试1: Token获取...")

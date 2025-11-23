@@ -6,6 +6,6 @@
 1. 音频重采样: 44100Hz → 16000Hz (已启用)
 2. Token获取: 使用阿里云官方SDK
 3. API方式: HTTP REST API (已修复采样率问题)
-4. AppKey: 4G5BCMccTCW8nC8w
+4. AppKey: YOUR_NLS_APPKEY
 
 ## 关键文件校验45f28d2e8c48b3dc91727c8a9ec62db0  src/modules/asr/simple_aliyun_asr_service.py

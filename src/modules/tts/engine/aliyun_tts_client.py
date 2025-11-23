@@ -43,7 +43,7 @@ class AliyunTTSClient:
         self.region = self.config.get('region', 'cn-shanghai')
         self.endpoint = f"https://nls-gateway.{self.region}.aliyuncs.com/stream/v1/tts"
         # 使用正确的appkey (用户提供)
-        self.app_key = self.config.get('app_key', '4G5BCMccTCW8nC8w')
+        self.app_key = self.config.get('app_key', 'YOUR_NLS_APPKEY')
         # 动态获取Token - 使用Token管理器
         try:
             from aliyun_nls_token_manager import AliyunNLSTokenManager

@@ -25,8 +25,8 @@ def check_token_generation():
         from nls.token import getToken
 
         # 使用文档中的真实凭证
-        access_key_id = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-        access_key_secret = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
+        access_key_id = "YOUR_ACCESS_KEY_ID"
+        access_key_secret = "YOUR_ACCESS_KEY_SECRET"
 
         token = getToken(access_key_id, access_key_secret)
         if token and len(token) > 10:
@@ -38,7 +38,7 @@ def check_token_generation():
 
 def check_app_key():
     """检查App Key配置"""
-    app_key = "4G5BCMccTCW8nC8w"
+    app_key = "YOUR_NLS_APPKEY"
     if len(app_key) >= 10:
         return True, f"App Key: 有效 ({app_key})"
     else:
@@ -50,9 +50,9 @@ def check_websocket_connection():
         from nls.token import getToken
         from nls.speech_synthesizer import NlsSpeechSynthesizer
 
-        access_key_id = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-        access_key_secret = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-        app_key = "4G5BCMccTCW8nC8w"
+        access_key_id = "YOUR_ACCESS_KEY_ID"
+        access_key_secret = "YOUR_ACCESS_KEY_SECRET"
+        app_key = "YOUR_NLS_APPKEY"
 
         token = getToken(access_key_id, access_key_secret)
         if not token:

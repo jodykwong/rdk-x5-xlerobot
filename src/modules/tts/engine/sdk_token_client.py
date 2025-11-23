@@ -52,7 +52,7 @@ def get_token_with_sdk():
         # 配置Access Key
         access_key_id = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_ID', '')
         access_key_secret = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET', '')
-        app_key = os.getenv('ALIBABA_CLOUD_APP_KEY', '4G5BCMccTCW8nC8w')
+        app_key = os.getenv('ALIBABA_CLOUD_APP_KEY', 'YOUR_NLS_APPKEY')
 
         logger.info(f"✓ Access Key ID: {access_key_id[:10]}...")
         logger.info(f"✓ App Key: {app_key}")
@@ -85,7 +85,7 @@ def test_tts_with_token(token):
         import base64
         import requests
 
-        app_key = os.getenv('ALIBABA_CLOUD_APP_KEY', '4G5BCMccTCW8nC8w')
+        app_key = os.getenv('ALIBABA_CLOUD_APP_KEY', 'YOUR_NLS_APPKEY')
 
         # 构建TTS请求
         tts_data = {

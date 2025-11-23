@@ -29,9 +29,9 @@ __STRICT_NO_MOCK__ = True
 sys.path.insert(0, '/home/sunrise/xlerobot/src')
 os.environ['PYTHONPATH'] = "/home/sunrise/xlerobot/src:" + os.environ.get('PYTHONPATH', '')
 os.environ['ROS_DOMAIN_ID'] = '42'
-os.environ['ALIBABA_CLOUD_ACCESS_KEY_ID'] = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-os.environ['ALIBABA_CLOUD_ACCESS_KEY_SECRET'] = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-os.environ['ALIYUN_NLS_APPKEY'] = "4G5BCMccTCW8nC8w"
+os.environ['ALIBABA_CLOUD_ACCESS_KEY_ID'] = "YOUR_ACCESS_KEY_ID"
+os.environ['ALIBABA_CLOUD_ACCESS_KEY_SECRET'] = "YOUR_ACCESS_KEY_SECRET"
+os.environ['ALIYUN_NLS_APPKEY'] = "YOUR_NLS_APPKEY"
 os.environ['QWEN_API_KEY'] = "sk-600a739fb3f54f338616254c1c69c1f6"
 
 # 配置日志

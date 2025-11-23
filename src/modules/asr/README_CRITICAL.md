@@ -28,7 +28,7 @@ enable_resample = True      # 必须启用
 #### 2. AppKey配置
 ```python
 # ✅ 正确：
-APP_KEY = "4G5BCMccTCW8nC8w"  # ASR+TTS项目的AppKey
+APP_KEY = "YOUR_NLS_APPKEY"  # ASR+TTS项目的AppKey
 
 # ❌ 错误：
 # - 使用其他项目的AppKey

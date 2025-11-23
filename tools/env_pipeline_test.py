@@ -12,9 +12,9 @@ print("🔧 使用环境变量的粤语语音验证测试")
 print("=" * 60)
 
 # ============ 设置环境变量 ============
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-os.environ["ALIYUN_NLS_APPKEY"] = "4G5BCMccTCW8nC8w"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "YOUR_ACCESS_KEY_ID"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "YOUR_ACCESS_KEY_SECRET"
+os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
 
 print(f"✅ 环境变量设置完成")
 print(f"  ALIBABA_CLOUD_ACCESS_KEY_ID: {os.environ['ALIBABA_CLOUD_ACCESS_KEY_ID'][:10]}...")

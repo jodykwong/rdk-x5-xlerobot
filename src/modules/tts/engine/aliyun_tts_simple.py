@@ -30,7 +30,7 @@ class AliyunTTSSimple:
         # 从环境变量读取配置
         self.access_key_id = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_ID', '')
         self.access_key_secret = os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET', '')
-        self.app_key = '4G5BCMccTCW8nC8w'
+        self.app_key = 'YOUR_NLS_APPKEY'
 
         # 端点
         self.endpoint = "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/tts"

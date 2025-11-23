@@ -40,9 +40,9 @@ class RealWebSocketTTS:
     def __init__(self):
         """初始化TTS客户端"""
         # API凭证 (来自文档)
-        self.access_key_id = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-        self.access_key_secret = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-        self.app_key = "4G5BCMccTCW8nC8w"
+        self.access_key_id = "YOUR_ACCESS_KEY_ID"
+        self.access_key_secret = "YOUR_ACCESS_KEY_SECRET"
+        self.app_key = "YOUR_NLS_APPKEY"
 
         # WebSocket端点
         self.ws_url = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1"

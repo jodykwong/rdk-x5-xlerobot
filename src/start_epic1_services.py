@@ -79,7 +79,7 @@ import os
 # 设置阿里云认证信息
 os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "LTAI5tQ4E2YNzZkGn9g1JqeY"
 os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-os.environ["ALIYUN_NLS_APPKEY"] = "4G5BCMccTCW8nC8w"
+os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

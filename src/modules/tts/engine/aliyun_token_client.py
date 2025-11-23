@@ -167,7 +167,7 @@ class AliyunTokenClient:
 
         # 使用Token调用TTS API进行测试
         test_data = {
-            'appkey': '4G5BCMccTCW8nC8w',
+            'appkey': 'YOUR_NLS_APPKEY',
             'token': token,
             'text': '测试',
             'voice': 'xiaoxiao',

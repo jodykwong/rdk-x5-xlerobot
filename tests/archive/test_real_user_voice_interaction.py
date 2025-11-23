@@ -15,9 +15,9 @@ import signal
 from pathlib import Path
 
 # 设置环境变量
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-os.environ["ALIYUN_NLS_APPKEY"] = "4G5BCMccTCW8nC8w"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "YOUR_ACCESS_KEY_ID"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "YOUR_ACCESS_KEY_SECRET"
+os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
 # 设置DashScope API Key (如果有的话)
 # os.environ["DASHSCOPE_API_KEY"] = "your_dashscope_api_key_here"
 
