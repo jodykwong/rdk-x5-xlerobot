@@ -1,0 +1,156 @@
+# XleRobot 系统基础配置
+# BMad-Method v6 Brownfield Level 4
+
+system:
+  name: "XleRobot"
+  version: "1.8.0"
+  description: "多模态语音交互系统"
+  architecture: "microservices"
+
+# 基础服务配置
+services:
+  asr:
+    name: "xlerobot-asr"
+    image: "xlerobot/asr"
+    port: 8001
+    resources:
+      cpu: "500m"
+      memory: "1Gi"
+      npu: "1"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+  tts:
+    name: "xlerobot-tts"
+    image: "xlerobot/tts"
+    port: 8002
+    resources:
+      cpu: "300m"
+      memory: "512Mi"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+  llm:
+    name: "xlerobot-llm"
+    image: "xlerobot/llm"
+    port: 8003
+    resources:
+      cpu: "1000m"
+      memory: "2Gi"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+  multimodal:
+    name: "xlerobot-multimodal"
+    image: "xlerobot/multimodal"
+    port: 8004
+    resources:
+      cpu: "800m"
+      memory: "1.5Gi"
+      bpu: "1"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+  monitoring:
+    name: "xlerobot-monitoring"
+    image: "xlerobot/monitoring"
+    port: 8005
+    resources:
+      cpu: "200m"
+      memory: "256Mi"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+  gateway:
+    name: "xlerobot-gateway"
+    image: "xlerobot/gateway"
+    ports: [80, 443]
+    resources:
+      cpu: "300m"
+      memory: "512Mi"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 10
+      retries: 3
+
+# 网络配置
+networking:
+  internal_network: "xlerobot-internal"
+  external_network: "xlerobot-external"
+  service_discovery: "dns"
+  load_balancing: "round_robin"
+
+# 存储配置
+storage:
+  type: "persistent"
+  base_path: "/data/xlerobot"
+  backup_path: "/backup/xlerobot"
+  retention_days: 30
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "json"
+  output: "stdout"
+  file_path: "/var/log/xlerobot"
+  max_size: "100MB"
+  max_files: 10
+
+# 监控配置
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  health_check_port: 8080
+  prometheus:
+    enabled: true
+    port: 9090
+    scrape_interval: "15s"
+  grafana:
+    enabled: true
+    port: 3000
+    dashboards_path: "/etc/grafana/dashboards"
+
+# 安全配置
+security:
+  tls:
+    enabled: true
+    cert_path: "/etc/ssl/certs"
+    key_path: "/etc/ssl/private"
+  authentication:
+    enabled: true
+    method: "jwt"
+    secret_key_path: "/etc/secrets/jwt_secret"
+  authorization:
+    enabled: true
+    roles: ["admin", "user", "readonly"]
+
+# 性能配置
+performance:
+  cache:
+    enabled: true
+    type: "redis"
+    host: "redis"
+    port: 6379
+    ttl: 3600
+  connection_pool:
+    max_connections: 100
+    max_idle_time: 300
+  timeout:
+    request_timeout: 30
+    connect_timeout: 10

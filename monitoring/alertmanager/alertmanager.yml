@@ -1,0 +1,220 @@
+# Alertmanager Configuration for XleRobot
+# BMad-Method v6 Brownfield Level 4 - Story 1.8 Work Package 2
+
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@xlerobot.local'
+  smtp_auth_username: 'alerts@xlerobot.local'
+  smtp_auth_password: 'alert_password_2025'
+
+# Route configuration for alert processing
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 15m
+      routes:
+        # NPU critical issues
+        - match:
+            component: npu
+          receiver: 'npu-critical'
+          continue: true
+
+        # System resource critical issues
+        - match:
+            component: system
+          receiver: 'system-critical'
+          continue: true
+
+        # SLA violations
+        - match:
+            component: sla
+          receiver: 'sla-critical'
+          continue: true
+
+    # Warning alerts - batch notification
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 2h
+
+    # Info alerts - hourly digest
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 300s
+      repeat_interval: 4h
+
+# Inhibition rules to prevent alert spam
+inhibit_rules:
+  # Inhibit non-critical alerts when critical alerts are firing
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['alertname', 'instance']
+
+  # Inhibit container alerts when host is down
+  - source_match:
+      alertname: InstanceDown
+    target_match_re:
+      alertname: (ContainerDown|ContainerHighCPU|ContainerHighMemory)
+    equal: ['instance']
+
+# Receiver configurations
+receivers:
+  # Default receiver
+  - name: 'default'
+    email_configs:
+      - to: 'admin@xlerobot.local'
+        subject: '[XleRobot Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Labels: {{ range .Labels.SortedPairs }}{{ .Name }}={{ .Value }} {{ end }}
+          {{ end }}
+        send_resolved: true
+
+  # Critical alerts receiver
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'admin@xlerobot.local,ops@xlerobot.local'
+        subject: '[CRITICAL] XleRobot Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Component: {{ .Labels.component }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+
+          Labels:
+          {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+          {{ end }}
+          {{ end }}
+
+          Immediate action required!
+        send_resolved: true
+    webhook_configs:
+      - url: 'http://localhost:8080/webhooks/critical'
+        send_resolved: true
+
+  # NPU critical alerts
+  - name: 'npu-critical'
+    email_configs:
+      - to: 'npu-team@xlerobot.local,admin@xlerobot.local'
+        subject: '[NPU CRITICAL] {{ .GroupLabels.alertname }}'
+        body: |
+          🔥 NPU CRITICAL ALERT 🔥
+
+          {{ range .Alerts }}
+          NPU Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Impact: Real-time processing affected
+          Action: Check NPU status immediately
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: 'http://localhost:8080/webhooks/npu-critical'
+        send_resolved: true
+
+  # System critical alerts
+  - name: 'system-critical'
+    email_configs:
+      - to: 'ops-team@xlerobot.local,admin@xlerobot.local'
+        subject: '[SYSTEM CRITICAL] {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ SYSTEM CRITICAL ALERT ⚠️
+
+          {{ range .Alerts }}
+          System Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Impact: System stability at risk
+          Action: Immediate system intervention required
+          {{ end }}
+        send_resolved: true
+
+  # SLA critical alerts
+  - name: 'sla-critical'
+    email_configs:
+      - to: 'sla-team@xlerobot.local,management@xlerobot.local'
+        subject: '[SLA VIOLATION] {{ .GroupLabels.alertname }}'
+        body: |
+          📊 SLA VIOLATION ALERT 📊
+
+          {{ range .Alerts }}
+          SLA Issue: {{ .Annotations.summary }}
+          Details: {{ .Annotations.description }}
+          Impact: Service level agreement breached
+          Action: Immediate investigation and remediation
+          {{ end }}
+        send_resolved: true
+
+  # Warning alerts receiver
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'ops-team@xlerobot.local'
+        subject: '[WARNING] Xleobot Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ WARNING ALERT ⚠️
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Component: {{ .Labels.component }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+
+          Please investigate within 2 hours.
+        send_resolved: true
+
+  # Info alerts receiver
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'ops-team@xlerobot.local'
+        subject: '[INFO] Xleobot Alert Digest'
+        body: |
+          ℹ️ INFORMATION ALERT DIGEST ℹ️
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+
+          This is an informational alert digest.
+        send_resolved: false
+
+# Time intervals for different alert types
+time_intervals:
+  - name: business_hours
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '18:00'
+        weekdays: ['monday:friday']
+
+  - name: after_hours
+    time_intervals:
+      - times:
+          - start_time: '18:01'
+            end_time: '08:59'
+        weekdays: ['monday:friday']
+      - weekdays: ['saturday', 'sunday']
+
+# Templates for custom alert formatting
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

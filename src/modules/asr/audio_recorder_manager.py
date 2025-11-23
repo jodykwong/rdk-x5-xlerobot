@@ -1,0 +1,399 @@
+#!/usr/bin/env python3.10
+"""
+AudioRecorderManager - 统一音频录音器管理器
+=====================================
+
+解决ASR系统中录音器的并发访问和状态管理问题。
+实现单例模式，确保全局只有一个录音器实例。
+
+作者: Claude Code Agent
+日期: 2025-11-18
+"""
+
+import threading
+import time
+import logging
+from typing import Optional, Dict, Any
+from enum import Enum
+
+# 导入录音器实现
+from .simple_alsa_recorder import SimpleALSARecorder
+
+# 配置日志
+logger = logging.getLogger(__name__)
+
+class RecordingState(Enum):
+    """录音状态枚举"""
+    IDLE = "idle"
+    BUSY = "busy"
+    RECORDING = "recording"
+    ERROR = "error"
+
+class AudioRecorderManager:
+    """
+    音频录音器管理器（单例模式）
+
+    功能：
+    1. 确保全局只有一个录音器实例
+    2. 管理录音器的并发访问
+    3. 统一录音器配置和状态管理
+    4. 提供录音器使用队列和锁机制
+    """
+
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        """单例模式实现"""
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(AudioRecorderManager, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        """初始化录音器管理器"""
+        if hasattr(self, '_initialized'):
+            return
+
+        self._initialized = True
+        self._recorder_lock = threading.Lock()
+        self._state_lock = threading.Lock()
+
+        # 录音器实例
+        self._recorder: Optional[SimpleALSARecorder] = None
+        self._state = RecordingState.IDLE
+
+        # 动态检测音频设备
+        self._config = self._detect_audio_device()
+
+        # 统计信息
+        self._stats = {
+            'total_requests': 0,
+            'successful_recordings': 0,
+            'failed_recordings': 0,
+            'concurrent_conflicts': 0,
+            'last_recording_time': None,
+            'average_recording_duration': 0.0
+        }
+
+        # 完成事件（用于同步录音状态）
+        self._completion_event = threading.Event()
+
+        # 初始化录音器
+        self._initialize_recorder()
+
+        logger.info("✅ AudioRecorderManager初始化完成")
+        logger.info(f"📊 录音器配置: {self._config}")
+
+    def _detect_audio_device(self) -> Dict[str, Any]:
+        """动态检测并配置音频设备"""
+        import subprocess
+
+        config = {
+            'target_rate': 16000,    # ASR要求的16kHz
+            'channels': 1,           # 单声道
+            'format': 'int16',       # 16-bit格式
+            'device': 'plughw:0,0'   # 默认USB设备
+        }
+
+        try:
+            # 使用arecord -l检测音频设备
+            result = subprocess.run(['arecord', '-l'],
+                                  capture_output=True, text=True, timeout=5)
+
+            if result.returncode == 0:
+                devices = result.stdout
+                logger.info("🎤 检测到的音频设备:")
+                logger.info(devices)
+
+                # 优先选择USB音频设备
+                if 'USB Audio' in devices:
+                    # 提取USB设备的card号
+                    import re
+                    usb_match = re.search(r'card (\d+).*USB Audio', devices)
+                    if usb_match:
+                        card_num = usb_match.group(1)
+                        config['device'] = f'plughw:{card_num},0'
+                        logger.info(f"✅ 选择USB音频设备: {config['device']}")
+                        return config
+
+                # 如果没有USB设备，尝试ES8326
+                if 'ES8326' in devices:
+                    es8326_match = re.search(r'card (\d+).*ES8326', devices)
+                    if es8326_match:
+                        card_num = es8326_match.group(1)
+                        config['device'] = f'plughw:{card_num},0'
+                        logger.info(f"✅ 选择ES8326音频设备: {config['device']}")
+                        return config
+
+                # 使用默认设备
+                logger.warning("⚠️ 未检测到首选音频设备，使用默认设备")
+
+            else:
+                logger.error("❌ 无法获取音频设备列表，使用默认配置")
+
+        except subprocess.TimeoutExpired:
+            logger.error("❌ 音频设备检测超时，使用默认配置")
+        except Exception as e:
+            logger.error(f"❌ 音频设备检测异常: {e}，使用默认配置")
+
+        return config
+
+    def _initialize_recorder(self):
+        """初始化录音器实例"""
+        try:
+            with self._recorder_lock:
+                if self._recorder is not None:
+                    # 清理现有录音器
+                    try:
+                        self._recorder.force_stop()
+                    except:
+                        pass
+
+                self._recorder = SimpleALSARecorder()
+                self._set_state(RecordingState.IDLE)
+                logger.info("✅ 录音器实例初始化成功")
+
+        except Exception as e:
+            logger.error(f"❌ 录音器初始化失败: {e}")
+            self._set_state(RecordingState.ERROR)
+            raise
+
+    def _set_state(self, state: RecordingState):
+        """设置录音器状态"""
+        with self._state_lock:
+            old_state = self._state
+            self._state = state
+            if old_state != state:
+                logger.debug(f"📊 录音器状态变更: {old_state.value} → {state.value}")
+
+    def get_state(self) -> RecordingState:
+        """获取当前状态"""
+        with self._state_lock:
+            return self._state
+
+    def is_available(self) -> bool:
+        """检查录音器是否可用"""
+        return self.get_state() == RecordingState.IDLE
+
+    def wait_for_availability(self, timeout: float = 5.0) -> bool:
+        """等待录音器变为可用状态"""
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
+            if self.is_available():
+                return True
+            time.sleep(0.1)
+
+        logger.warning(f"⚠️ 等待录音器可用超时 ({timeout}秒)")
+        return False
+
+    def start_recording(self, duration: float = 3.0) -> bool:
+        """
+        开始录音
+
+        Args:
+            duration: 录制时长（秒）
+
+        Returns:
+            bool: 是否成功启动录音
+        """
+        # 更新统计
+        self._stats['total_requests'] += 1
+        self._stats['last_recording_time'] = time.time()
+
+        # 检查录音器是否可用
+        if not self.is_available():
+            logger.warning("⚠️ 录音器当前不可用，等待释放...")
+            self._stats['concurrent_conflicts'] += 1
+
+            if not self.wait_for_availability():
+                logger.error("❌ 录音器等待超时，无法启动录音")
+                self._stats['failed_recordings'] += 1
+                return False
+
+        # 尝试启动录音
+        try:
+            with self._recorder_lock:
+                if self._recorder is None:
+                    logger.error("❌ 录音器实例不存在")
+                    self._stats['failed_recordings'] += 1
+                    return False
+
+                self._set_state(RecordingState.BUSY)
+
+                logger.info(f"🎤 启动录音，时长: {duration}秒")
+                success = self._recorder.start_recording(duration=duration)
+
+                if success:
+                    self._set_state(RecordingState.RECORDING)
+                    logger.info("✅ 录音启动成功")
+                    return True
+                else:
+                    logger.error("❌ 录音启动失败")
+                    self._set_state(RecordingState.ERROR)
+                    self._stats['failed_recordings'] += 1
+                    return False
+
+        except Exception as e:
+            logger.error(f"❌ 录音启动异常: {e}")
+            self._set_state(RecordingState.ERROR)
+            self._stats['failed_recordings'] += 1
+            return False
+
+    def stop_recording(self) -> tuple:
+        """
+        停止录音
+
+        Returns:
+            tuple: (success: bool, audio_data: numpy.ndarray)
+        """
+        try:
+            with self._recorder_lock:
+                if self._recorder is None:
+                    logger.error("❌ 录音器实例不存在")
+                    return False, None
+
+                if self.get_state() != RecordingState.RECORDING:
+                    logger.warning("⚠️ 当前没有录音在进行")
+                    return False, None
+
+                logger.info("🛑 停止录音...")
+                audio_data = self._recorder.stop_recording()
+
+                # 更新统计
+                recording_time = time.time() - self._stats['last_recording_time']
+                if len(audio_data) > 0:
+                    self._stats['successful_recordings'] += 1
+                    # 更新平均录音时长
+                    total_duration = (
+                        self._stats['average_recording_duration'] *
+                        (self._stats['successful_recordings'] - 1) + recording_time
+                    )
+                    self._stats['average_recording_duration'] = (
+                        total_duration / self._stats['successful_recordings']
+                    )
+                    logger.info(f"✅ 录音完成，数据长度: {len(audio_data)} samples")
+                    self._set_state(RecordingState.IDLE)
+                    return True, audio_data
+                else:
+                    logger.warning("⚠️ 录音完成但无数据")
+                    self._stats['failed_recordings'] += 1
+                    self._set_state(RecordingState.ERROR)
+                    return False, None
+
+        except Exception as e:
+            logger.error(f"❌ 录音停止异常: {e}")
+            self._set_state(RecordingState.ERROR)
+            self._stats['failed_recordings'] += 1
+            return False, None
+
+    def test_recording(self, duration: float = 2.0) -> bool:
+        """
+        测试录音功能
+
+        Args:
+            duration: 测试录音时长
+
+        Returns:
+            bool: 测试是否成功
+        """
+        logger.info(f"🧪 开始录音器测试，时长: {duration}秒")
+
+        success = self.start_recording(duration=duration)
+
+        if success:
+            # 等待录音完成
+            time.sleep(duration + 0.5)
+
+            test_success, audio_data = self.stop_recording()
+
+            if test_success and audio_data is not None and len(audio_data) > 0:
+                logger.info(f"🎉 录音器测试成功，录制数据: {len(audio_data)} samples")
+                return True
+            else:
+                logger.error("❌ 录音器测试失败：无有效数据")
+                return False
+        else:
+            logger.error("❌ 录音器测试失败：启动录音失败")
+            return False
+
+    def force_reset(self):
+        """强制重置录音器"""
+        logger.warning("🔄 强制重置录音器...")
+
+        try:
+            with self._recorder_lock:
+                if self._recorder is not None:
+                    self._recorder.force_stop()
+                    self._recorder = None
+
+                self._initialize_recorder()
+                logger.info("✅ 录音器重置完成")
+
+        except Exception as e:
+            logger.error(f"❌ 录音器重置失败: {e}")
+
+    def get_stats(self) -> Dict[str, Any]:
+        """获取录音器统计信息"""
+        with self._state_lock:
+            stats = self._stats.copy()
+            stats['current_state'] = self._state.value
+
+            # 计算成功率
+            if stats['total_requests'] > 0:
+                stats['success_rate'] = (
+                    stats['successful_recordings'] / stats['total_requests']
+                )
+            else:
+                stats['success_rate'] = 0.0
+
+            return stats
+
+    def get_config(self) -> Dict[str, Any]:
+        """获取录音器配置"""
+        return self._config.copy()
+
+    def get_completion_event(self) -> threading.Event:
+        """
+        获取录音完成事件
+
+        Returns:
+            threading.Event: 录音完成事件，可用于等待录音结束
+        """
+        try:
+            with self._recorder_lock:
+                if self._recorder is not None:
+                    # 优先使用底层录音器的完成事件
+                    return self._recorder.get_completion_event()
+                else:
+                    # 如果录音器不存在，返回管理器自己的事件
+                    logger.warning("⚠️ 录音器实例不存在，返回管理器的默认事件")
+                    return self._completion_event
+        except Exception as e:
+            logger.error(f"❌ 获取完成事件失败: {e}")
+            return self._completion_event
+
+# 全局单例实例
+_recorder_manager = None
+
+def get_recorder_manager() -> AudioRecorderManager:
+    """获取全局录音器管理器实例"""
+    global _recorder_manager
+    if _recorder_manager is None:
+        _recorder_manager = AudioRecorderManager()
+    return _recorder_manager
+
+# 向后兼容的函数
+def create_audio_recorder() -> AudioRecorderManager:
+    """创建录音器（返回管理器实例）"""
+    return get_recorder_manager()
+
+# 导出主要接口
+__all__ = [
+    'AudioRecorderManager',
+    'RecordingState',
+    'get_recorder_manager',
+    'create_audio_recorder'
+]

@@ -1,0 +1,299 @@
+# 阿里云智能语音交互服务配置文件
+# XleRobot Story 1.1 - 语音唤醒和基础识别
+# Brownfield Level 4 企业级配置
+
+# ============================================================================
+# 📋 基础配置信息
+# ============================================================================
+config:
+  version: "1.0"
+  project_name: "xlerobot"
+  story_id: "1.1"
+  created_date: "2025-11-08"
+  description: "阿里云NLS语音识别和语音合成服务配置"
+  brownfield_level: 4
+
+# ============================================================================
+# 🔐 认证配置 (需要用户填写)
+# ============================================================================
+authentication:
+  # 从阿里云控制台获取的项目AppKey
+  appkey: "4G5BCMccTCW8nC8w"  # ✅ 已配置
+
+  # Token相关配置
+  token:
+    # Token获取API端点 (CreateToken API)
+    endpoint: "https://nls-meta.cn-shanghai.aliyuncs.com"
+    api_version: "2019-02-28"
+    action: "CreateToken"
+    region_id: "cn-shanghai"
+
+    # Access Key ID (从阿里云控制台获取)
+    access_key_id: "LTAI5tQ4E2YNzZkGn9g1JqeY"  # ✅ 已配置
+
+    # Access Key Secret (从阿里云控制台获取)
+    access_key_secret: "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"  # ✅ 已配置
+
+    # Token过期时间(秒)，建议设置为3600(1小时)
+    expire_seconds: 3600
+
+    # Token缓存配置
+    cache:
+      enabled: true
+      cache_file: "/tmp/aliyun_nls_token.cache"
+      buffer_seconds: 300  # 提前5分钟刷新token
+
+# ============================================================================
+# 🌐 服务端点配置
+# ============================================================================
+service_endpoints:
+  # 智能就近接入(推荐)
+  intelligent:
+    websocket: "wss://nls-gateway.aliyuncs.com/ws/v1"
+
+  # 地域特定端点
+  regions:
+    shanghai:
+      websocket: "wss://nls-gateway-cn-shanghai.aliyuncs.com/ws/v1"
+      internal: "ws://nls-gateway-cn-shanghai-internal.aliyuncs.com:80/ws/v1"
+
+    beijing:
+      websocket: "wss://nls-gateway-cn-beijing.aliyuncs.com/ws/v1"
+      internal: "ws://nls-gateway-cn-beijing-internal.aliyuncs.com:80/ws/v1"
+
+    shenzhen:
+      websocket: "wss://nls-gateway-cn-shenzhen.aliyuncs.com/ws/v1"
+      internal: "ws://nls-gateway-cn-shenzhen-internal.aliyuncs.com:80/ws/v1"
+
+# ============================================================================
+# 🎤 语音识别(ASR)配置 - Story 1.1核心功能
+# ============================================================================
+asr:
+  enabled: true
+
+  # 基础参数
+  format: "pcm"           # 音频格式: pcm/wav/mp3
+  sample_rate: 16000      # 采样率: 8000/16000 (Hz)
+  enable_sample_rate_adaptive: true  # 启用采样率自适应
+  enable_words: true      # 启用词级时间戳
+
+  # 粤语优化配置
+  cantonese:
+    enabled: true
+    model: "paraformer-v1"  # 粤语模型
+    language: "cantonese"  # 语言设置
+    enable_punctuation_prediction: true
+    enable_inverse_text_normalization: true
+
+  # 普通话配置
+  mandarin:
+    enabled: true
+    model: "paraformer-v1"
+    language: "zh"
+
+  # 混合语言识别
+  multilingual:
+    enabled: true
+    auto_language_detection: true
+    fallback_language: "zh"
+
+  # 噪声处理
+  noise_reduction:
+    enabled: true
+    threshold: 0.3
+
+  # VAD(语音活动检测)
+  vad:
+    enabled: true
+    max_silence_time: 800  # 最大静音时间(ms)
+    min_speech_time: 200   # 最小语音时间(ms)
+
+# ============================================================================
+# 🔊 语音合成(TTS)配置
+# ============================================================================
+tts:
+  enabled: true
+
+  # 默认发音人配置
+  voice: "xiaoyun"        # 默认女声
+
+  # 粤语发音人选项 (根据用户配置)
+  cantonese_voices:
+    female: ["jiajia", "shanshan", "taozi"]
+    male: ["abin"]
+    preferred: "jiajia"  # 用户指定：佳佳 - 粤语女声
+
+  # 普通话发音人选项
+  mandarin_voices:
+    female: ["xiaoyun", "siqi", "ruoxi", "aiya"]
+    male: ["xiaogang", "sicheng", "aicheng"]
+    preferred: "xiaoyun"
+
+  # 音频输出配置 (根据用户配置)
+  audio:
+    format: "wav"         # 输出格式: wav (用户指定)
+    sample_rate: 16000    # 采样率 (用户指定)
+    volume: 100           # 音量 0-100 (用户指定: 100)
+    speech_rate: 0       # 语速 -500~500 (用户指定: 0)
+    pitch_rate: 0        # 语调 -500~500 (用户指定: 0)
+
+  # 高级功能
+  advanced:
+    enable_subtitle: false       # 字级别时间戳
+    enable_emotion: false         # 情感合成(需要支持多情感的音色)
+
+  # 多情感声音配置
+  emotions:
+    enabled: false  # Story 1.1暂不启用，可后续扩展
+    available_emotions:
+      - neutral
+      - happy
+      - sad
+      - angry
+
+# ============================================================================
+# 🎛️ 系统配置
+# ============================================================================
+system:
+  # 连接配置
+  connection:
+    timeout: 10         # 连接超时(秒)
+    max_retries: 3       # 最大重试次数
+    retry_delay: 1       # 重试延迟(秒)
+
+  # 性能配置
+  performance:
+    max_concurrent_requests: 5    # 最大并发请求数
+    request_timeout: 30            # 请求超时(秒)
+
+  # 日志配置
+  logging:
+    enabled: true
+    level: "INFO"        # DEBUG/INFO/WARN/ERROR
+    file: "/var/log/xlerobot/aliyun_nls.log"
+    max_file_size: "10MB"
+    max_files: 5
+
+  # 监控配置
+  monitoring:
+    enabled: true
+    metrics_file: "/var/log/xlerobot/aliyun_nls_metrics.log"
+
+  # 错误处理
+  error_handling:
+    auto_retry: true
+
+# ============================================================================
+# 🔧 开发和调试配置
+# ============================================================================
+development:
+  # 调试模式
+  debug:
+    enabled: false
+    log_requests: false
+    log_responses: false
+    save_audio_files: false
+    audio_save_path: "/tmp/xlerobot/audio_debug/"
+
+  # 测试配置
+  testing:
+    enabled: true
+    test_audio_file: "/home/sunrise/xlerobot/test_audio/test_cantonese.wav"
+    expected_asr_result: "傻强"
+    enable_mock_responses: false
+
+# ============================================================================
+# 📊 质量保证配置
+# ============================================================================
+quality_assurance:
+  # ASR质量标准
+  asr_quality:
+    min_accuracy_threshold: 0.90  # 最低识别准确率90%
+    max_response_time: 2000         # 最大响应时间2秒
+    max_error_rate: 0.05            # 最大错误率5%
+
+  # TTS质量标准
+  tts_quality:
+    min_mos_score: 4.0             # 最低MOS评分4.0
+    max_synthesis_delay: 800        # 最大合成延迟800ms
+    audio_quality_check: true       # 音频质量检查
+
+  # 健康检查
+  health_check:
+    enabled: true
+    interval: 300  # 检查间隔(秒)
+    endpoint: "/health/aliyun_nls"
+
+# ============================================================================
+# 📝 使用说明和备注
+# ============================================================================
+notes:
+  configuration_guide: |
+    1. 填写认证信息:
+       - appkey: 从阿里云控制台项目详情页获取
+       - access_key_id: 从RAM用户管理获取
+       - access_key_secret: 从RAM用户管理获取
+
+    2. 安全建议:
+       - 不要将密钥信息提交到版本控制系统
+       - 使用环境变量或密钥管理系统
+       - 定期轮换访问密钥
+
+    3. 网络配置:
+       - 默认使用智能就近接入
+       - 如使用ECS内网，请配置internal端点
+       - 确保防火墙允许WebSocket连接
+
+    4. 粤语优化:
+       - Story 1.1重点支持粤语识别
+       - 推荐使用shanshan或jiajia发音人
+       - 启用多语言检测和混合识别
+
+# ============================================================================
+# 🔄 环境变量映射 (可选)
+# ============================================================================
+# 以下环境变量会覆盖配置文件中的对应值:
+# ALIYUN_NLS_APPKEY
+# ALIYUN_NLS_ACCESS_KEY_ID
+# ALIYUN_NLS_ACCESS_KEY_SECRET
+# ALIYUN_NLS_REGION
+# ALIYUN_NLS_DEBUG
+
+environment_variables:
+  enabled: true
+  mapping:
+    appkey: "ALIYUN_NLS_APPKEY"
+    access_key_id: "ALIYUN_NLS_ACCESS_KEY_ID"
+    access_key_secret: "ALIYUN_NLS_ACCESS_KEY_SECRET"
+    region: "ALIYUN_NLS_REGION"
+    debug: "ALIYUN_NLS_DEBUG"
+
+# ============================================================================
+# 📋 配置验证清单
+# ============================================================================
+validation_checklist:
+  authentication:
+    appkey_filled: true
+    access_key_id_filled: true
+    access_key_secret_filled: true
+    token_permission_configured: false
+
+  network:
+    firewall_rules_configured: false
+    websocket_connection_tested: false
+    dns_resolution_normal: false
+
+  audio:
+    audio_input_device_normal: false
+    sample_rate_matches_hardware: false
+    audio_format_configured_correctly: false
+
+  quality:
+    asr_accuracy_test_passed: false
+    tts_synthesis_quality_verified: false
+    end_to_end_latency_tested: false
+
+  integration:
+    ros2_node_integration_tested: false
+    audio_data_flow_verified: false
+    error_handling_mechanism_tested: false

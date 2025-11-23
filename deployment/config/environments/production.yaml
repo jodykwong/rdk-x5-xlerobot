@@ -1,0 +1,217 @@
+# XleRobot 生产环境配置
+# BMad-Method v6 Brownfield Level 4
+
+# 环境标识
+environment:
+  name: "production"
+  type: "production"
+  region: "ap-southeast-1"
+  availability_zones: ["ap-southeast-1a", "ap-southeast-1b"]
+
+# 系统配置覆盖
+system:
+  replicas:
+    asr: 3
+    tts: 3
+    llm: 2
+    multimodal: 3
+    monitoring: 2
+    gateway: 2
+
+# 服务资源扩展
+services:
+  asr:
+    replicas: 3
+    resources:
+      cpu: "1000m"
+      memory: "2Gi"
+      npu: "1"
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 5
+      target_cpu_utilization: 70
+      target_memory_utilization: 80
+
+  tts:
+    replicas: 3
+    resources:
+      cpu: "600m"
+      memory: "1Gi"
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 4
+      target_cpu_utilization: 70
+
+  llm:
+    replicas: 2
+    resources:
+      cpu: "2000m"
+      memory: "4Gi"
+    autoscaling:
+      enabled: true
+      min_replicas: 1
+      max_replicas: 3
+      target_cpu_utilization: 75
+
+  multimodal:
+    replicas: 3
+    resources:
+      cpu: "1500m"
+      memory: "3Gi"
+      bpu: "1"
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 5
+      target_cpu_utilization: 70
+
+  monitoring:
+    replicas: 2
+    resources:
+      cpu: "400m"
+      memory: "512Mi"
+
+  gateway:
+    replicas: 2
+    resources:
+      cpu: "600m"
+      memory: "1Gi"
+    load_balancer:
+      type: "external"
+      ssl_certificate: "xlerobot-prod-cert"
+
+# 网络配置
+networking:
+  load_balancer:
+    type: "external"
+    ssl_termination: true
+    health_check:
+      path: "/health"
+      interval: 10
+      timeout: 5
+  dns:
+    domain: "xlerobot.com"
+    subdomains:
+      api: "api.xlerobot.com"
+      monitoring: "monitoring.xlerobot.com"
+
+# 存储配置
+storage:
+  production_class: "ssd"
+  backup_class: "standard"
+  backup_schedule: "0 2 * * *"  # 每天凌晨2点备份
+  encryption:
+    enabled: true
+    algorithm: "AES-256"
+    key_rotation: "90d"
+
+# 数据库配置
+database:
+  host: "prod-db.xlerobot.internal"
+  port: 5432
+  name: "xlerobot_prod"
+  ssl_mode: "require"
+  connection_pool:
+    max_connections: 50
+    min_connections: 5
+
+# 缓存配置
+cache:
+  redis:
+    host: "prod-redis.xlerobot.internal"
+    port: 6379
+    cluster_enabled: true
+    sentinel_enabled: true
+    memory_limit: "4Gi"
+    eviction_policy: "allkeys-lru"
+
+# 监控配置增强
+monitoring:
+  prometheus:
+    retention: "30d"
+    storage_size: "100Gi"
+    remote_write:
+      enabled: true
+      url: "https://prometheus-remote.xlerobot.com/api/v1/write"
+  grafana:
+    admin_user: "admin"
+    external_access: true
+    smtp:
+      enabled: true
+      host: "smtp.xlerobot.com"
+      port: 587
+  alertmanager:
+    enabled: true
+    smtp:
+      enabled: true
+      to: ["ops@xlerobot.com", "dev@xlerobot.com"]
+    slack:
+      enabled: true
+      webhook_url: "https://hooks.slack.com/services/XLEROBOT"
+
+# 日志配置
+logging:
+  level: "INFO"
+  aggregation:
+    enabled: true
+    elasticsearch:
+      host: "prod-elasticsearch.xlerobot.internal"
+      port: 9200
+      retention: "30d"
+  audit:
+    enabled: true
+    output: "file"
+    file_path: "/var/log/xlerobot/audit.log"
+
+# 安全配置增强
+security:
+  tls:
+    min_version: "1.2"
+    cipher_suites: ["TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"]
+  authentication:
+    session_timeout: 3600
+    max_login_attempts: 3
+    lockout_duration: 900
+  authorization:
+    rbac_enabled: true
+    policy_path: "/etc/xlerobot/policies"
+  network_policies:
+    enabled: true
+    default_policy: "deny"
+
+# 性能配置
+performance:
+  cache:
+    redis_cluster: true
+    shard_count: 6
+    replication_factor: 2
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 1000
+    burst_size: 100
+  circuit_breaker:
+    enabled: true
+    failure_threshold: 5
+    recovery_timeout: 30
+
+# 备份和恢复
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention_days: 30
+  storage_class: "standard"
+  encryption: true
+  cross_region_backup: true
+  backup_regions: ["ap-southeast-2"]
+
+# 灾难恢复
+disaster_recovery:
+  enabled: true
+  rpo: "15m"  # Recovery Point Objective
+  rto: "1h"   # Recovery Time Objective
+  dr_region: "ap-southeast-2"
+  failover:
+    automatic: false
+    health_check_interval: 30

@@ -1,0 +1,30 @@
+# Story 1.3 MVP依赖
+# 基础语音识别 (阿里云ASR API集成)
+
+# 核心依赖
+requests>=2.31.0
+numpy==1.24.3
+soundfile==0.12.1
+
+# 语音识别依赖
+SpeechRecognition>=3.10.0
+pyaudio>=0.2.11
+
+# 音频播放依赖
+pygame>=2.1.0
+
+# 阿里云SDK依赖
+alibabacloud-nls-python-sdk>=1.0.2
+
+# DashScope API依赖（多模态LLM）
+aiohttp>=3.8.0
+dashscope>=1.17.0
+
+# ROS2依赖 (系统Python 3.10)
+rclpy
+std-msgs
+audio-msgs
+
+# 可选依赖 (用于音频处理)
+librosa==0.10.1
+pydub>=0.25.1

@@ -1,0 +1,14 @@
+
+model:
+  name: "VITS粤语模型"
+  model_path: "/home/sunrise/xlerobot/MODELS/tts/vits_cantonese.pt"
+  config_path: "/home/sunrise/xlerobot/src/modules/tts/config/default_config.yaml"
+
+synthesis:
+  noise_scale: 0.5
+  length_scale: 1.0
+  speaker_id: 0
+
+audio:
+  sample_rate: 22050
+  quality: "high"

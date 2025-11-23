@@ -1,0 +1,78 @@
+# XleRobot 配置管理结构
+# BMad-Method v6 Brownfield Level 4 标准
+
+# 配置目录结构
+config_structure:
+  base_config: "config/base/"
+  environment_configs:
+    development: "config/environments/development.yaml"
+    testing: "config/environments/testing.yaml"
+    staging: "config/environments/staging.yaml"
+    production: "config/environments/production.yaml"
+
+  service_configs:
+    asr_service: "config/services/asr.yaml"
+    tts_service: "config/services/tts.yaml"
+    llm_service: "config/services/llm.yaml"
+    multimodal_service: "config/services/multimodal.yaml"
+    monitoring_service: "config/services/monitoring.yaml"
+    gateway_service: "config/services/gateway.yaml"
+
+  secrets:
+    encrypted_secrets: "config/secrets/encrypted/"
+    environment_secrets: "config/secrets/environments/"
+    certificate_store: "config/secrets/certificates/"
+
+  runtime_configs:
+    deployment_configs: "config/runtime/deployment/"
+    monitoring_configs: "config/runtime/monitoring/"
+    logging_configs: "config/runtime/logging/"
+
+# 配置继承层次
+inheritance_hierarchy:
+  level_1_base: "config/base/*"
+  level_2_environment: "config/environments/{environment}/*"
+  level_3_service: "config/services/{service}/*"
+  level_4_runtime: "config/runtime/{type}/*"
+  level_5_secrets: "config/secrets/{environment}/*"
+
+# 配置版本控制
+version_control:
+  git_tracked:
+    - "config/base/"
+    - "config/environments/"
+    - "config/services/"
+    - "config/runtime/"
+
+  git_ignore:
+    - "config/secrets/encrypted/"
+    - "config/secrets/environments/"
+    - "config/secrets/certificates/"
+    - "*.key"
+    - "*.pem"
+    - "*.p12"
+    - ".env.*"
+    - "passwords.yaml"
+
+# 配置验证规则
+validation_rules:
+  required_fields:
+    - "system.version"
+    - "system.environment"
+    - "services.*.port"
+    - "services.*.replicas"
+    - "monitoring.enabled"
+
+  field_types:
+    "system.version": "string"
+    "services.*.port": "integer"
+    "services.*.replicas": "integer"
+    "monitoring.enabled": "boolean"
+
+  value_constraints:
+    "services.*.port":
+      min: 1000
+      max: 65535
+    "services.*.replicas":
+      min: 1
+      max: 10

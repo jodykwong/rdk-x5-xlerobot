@@ -1,0 +1,72 @@
+# XleRobot ASR服务镜像
+# BMad-Method v6 Brownfield Level 4
+# 语音识别服务
+
+FROM xlerobot/base:1.8.0
+
+# 设置标签
+LABEL maintainer="XleRobot Team"
+LABEL version="1.8.0"
+LABEL service="asr"
+LABEL description="XleRobot ASR Service"
+
+# 设置环境变量
+ENV SERVICE_NAME="xlerobot-asr" \
+    SERVICE_PORT=8001 \
+    SERVICE_VERSION="1.8.0" \
+    LOG_LEVEL="INFO" \
+    LOG_FORMAT="json"
+
+# 安装ASR特定依赖
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # 音频处理库
+        libsndfile1 \
+        ffmpeg \
+        sox \
+        # 系统性能工具
+        perf \
+        && rm -rf /var/lib/apt/lists/*
+
+# 安装Python ASR依赖
+COPY requirements-asr.txt /tmp/requirements-asr.txt
+RUN pip install -r /tmp/requirements-asr.txt && \
+    rm /tmp/requirements-asr.txt
+
+USER xlerobot
+
+# 复制源代码
+WORKDIR /opt/xlerobot
+COPY --chown=xlerobot:xlerobot src/ ./src/
+COPY --chown=xlerobot:xlerobot config/ ./config/
+
+# 复制ASR特定配置
+COPY --chown=xlerobot:xlerobot deployment/config/services/asr.yaml ./config/service.yaml
+
+# 创建日志目录
+RUN mkdir -p /var/log/xlerobot/asr
+
+# 复制启动脚本
+COPY --chown=xlerobot:xlerobot docker/scripts/start_asr.sh /opt/xlerobot/scripts/start.sh
+RUN chmod +x /opt/xlerobot/scripts/start.sh
+
+# 复制健康检查脚本
+COPY --chown=xlerobot:xlerobot docker/scripts/health_check.sh /opt/xlerobot/scripts/health_check.sh
+RUN chmod +x /opt/xlerobot/scripts/health_check.sh
+
+# 设置入口点
+ENTRYPOINT ["/opt/xlerobot/scripts/start.sh"]
+
+# 暴露端口
+EXPOSE 8001 9091
+
+# 设置健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /opt/xlerobot/scripts/health_check.sh || exit 1
+
+# 添加监控标签
+LABEL monitoring.enabled="true" \
+      monitoring.port="9091" \
+      monitoring.path="/metrics" \
+      monitoring.service="asr"

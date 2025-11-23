@@ -1,0 +1,945 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context id="xlerobot/story-context/1.8" v="1.0" bmad-method="v6" brownfield-level="4">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.8</storyId>
+    <title>系统优化与部署</title>
+    <status>ContextReadyDraft</status>
+    <generatedAt>2025-11-12T00:00:00Z</generatedAt>
+    <generator>BMad-Method v6 Brownfield Level 4 Workflow</generator>
+    <sourceStoryPath>story-context-1.8-system-optimization-deployment.xml</sourceStoryPath>
+    <lastContextAnalysis>2025-11-12T00:00:00Z</lastContextAnalysis>
+  </metadata>
+
+  <story>
+    <asA>系统部署工程师</asA>
+    <iWant>对现有的XleRobot语音交互系统进行全面优化和部署就绪</iWant>
+    <soThat>系统能够在生产环境中稳定运行，满足性能要求，并支持扩展部署</soThat>
+    <epic>1 - 多模态语音交互系统</epic>
+    <iteration>1 - 纯在线架构约束</iteration>
+    <tasks>
+      <task id="1">系统性能基线分析和瓶颈识别</task>
+      <task id="2">内存泄漏和长期稳定性优化</task>
+      <task id="3">NPU/BPU加速性能调优</task>
+      <task id="4">系统监控和告警机制部署</task>
+      <task id="5">容器化和编排部署配置</task>
+      <task id="6">生产环境验证和压力测试</task>
+      <task id="7">部署文档和运维手册编写</task>
+    </tasks>
+  </story>
+
+  <!-- Brownfield Level 4: 现有系统深度分析 -->
+  <brownfield-analysis level="4">
+    <existing-code-analysis>
+      <!-- Story 1.1-1.7 完整实现状态分析 -->
+      <story-analysis id="1.1" status="COMPLETED">
+        <title>粤语语音识别基础功能</title>
+        <completion-rate>100%</completion-rate>
+        <key-components>
+          <component>src/modules/asr/asr_core.py - ASR核心引擎 (完整实现)</component>
+          <component>src/modules/asr/sensevoice_model.py - SenseVoiceSmall模型封装</component>
+          <component>src/modules/asr/config.py - 配置管理</component>
+          <component>src/modules/asr/api.py - Python API接口</component>
+        </key-components>
+        <test-coverage>85%</test-coverage>
+        <performance-baseline>
+          <metric name="recognition_accuracy">85%+ (粤语)</metric>
+          <metric name="response_time">300ms (NPU), 2s (CPU)</metric>
+          <metric name="memory_usage">500MB per instance</metric>
+        </performance-baseline>
+      </story-analysis>
+
+      <story-analysis id="1.2" status="COMPLETED">
+        <title>实时语音识别优化</title>
+        <completion-rate>100%</completion-rate>
+        <key-components>
+          <component>src/modules/asr/performance/npu_accelerator.py - NPU/BPU加速器</component>
+          <component>src/modules/asr/performance/quantizer.py - 模型量化器</component>
+          <component>src/modules/asr/performance/streaming.py - 流式处理器</component>
+          <component>src/modules/asr/performance/concurrent.py - 并发管理器</component>
+          <component>src/modules/asr/asr_core_optimized.py - 优化版ASR引擎</component>
+        </key-components>
+        <test-coverage>90%</test-coverage>
+        <performance-baseline>
+          <metric name="npu_inference_time">8580ms (目标<50ms - 需优化)</metric>
+          <metric name="streaming_latency">100ms per chunk</metric>
+          <metric name="concurrent_streams">10 streams supported</metric>
+          <metric name="npu_utilization">80% (需要调优)</metric>
+        </performance-baseline>
+        <critical-issues>
+          <issue severity="HIGH">NPU推理性能未达标 - 171倍性能差距</issue>
+          <issue severity="MEDIUM">模型加载时间过长 (3263ms)</issue>
+          <issue severity="MEDIUM">BPU内存管理需要优化</issue>
+        </critical-issues>
+      </story-analysis>
+
+      <story-analysis id="1.3" status="COMPLETED">
+        <title>噪声抑制和音频预处理</title>
+        <completion-rate>100%</completion-rate>
+        <key-components>
+          <component>src/modules/asr/preprocessing/noise_suppressor.py - 噪声抑制器</component>
+          <component>src/modules/asr/preprocessing/vad.py - 语音活动检测</component>
+          <component>src/modules/asr/preprocessing/audio_enhancer.py - 音频增强器</component>
+          <component>src/modules/asr/preprocessing/microphone_array.py - 麦克风阵列处理</component>
+        </key-components>
+        <test-coverage>85%</test-coverage>
+        <performance-baseline>
+          <metric name="noise_suppression_snr">10dB+ improvement</metric>
+          <metric name="vad_accuracy">90%+</metric>
+          <metric name="preprocessing_latency">50ms</metric>
+          <metric name="accuracy_under_noise">80%+</metric>
+        </performance-baseline>
+      </story-analysis>
+
+      <story-analysis id="1.4" status="COMPLETED">
+        <title>连续语音识别</title>
+        <completion-rate>100%</completion-rate>
+        <key-components>
+          <component>src/modules/asr/streaming/session_manager.py - 会话管理器</component>
+          <component>src/modules/asr/streaming/state_machine.py - 状态机</component>
+          <component>src/modules/asr/streaming/wake_word_detector.py - 唤醒词检测器</component>
+          <component>src/modules/asr/monitoring/memory_monitor.py - 内存监控</component>
+          <component>src/modules/asr/monitoring/performance_monitor.py - 性能监控</component>
+        </key-components>
+        <test-coverage>90%</test-coverage>
+        <performance-baseline>
+          <metric name="continuous_session_duration">30+ minutes</metric>
+          <metric name="wake_word_detection_accuracy">95%+</metric>
+          <metric name="memory_leak_rate">0 MB/hour (需要验证)</metric>
+          <metric name="recovery_success_rate">95%+</metric>
+        </performance-baseline>
+        <critical-issues>
+          <issue severity="MEDIUM">长时间运行内存泄漏需要验证</issue>
+          <issue severity="LOW">唤醒词"傻强"检测准确率需要测试</issue>
+        </critical-issues>
+      </story-analysis>
+
+      <story-analysis id="1.5" status="COMPLETED">
+        <title>ASR服务接口开发</title>
+        <completion-rate>100%</completion-rate>
+        <key-components>
+          <component>src/modules/asr/api/rest/routes.py - RESTful API路由</component>
+          <component>src/modules/asr/api/rest/models.py - 数据模型</component>
+          <component>src/modules/asr/api/websocket/handler.py - WebSocket处理器</component>
+          <component>src/modules/asr/api/websocket/protocol.py - WebSocket协议</component>
+          <component>src/modules/asr/api/auth/jwt_handler.py - JWT认证</component>
+          <component>src/modules/asr/api/server.py - API服务器</component>
+        </key-components>
+        <test-coverage>90%</test-coverage>
+        <performance-baseline>
+          <metric name="api_response_time">100ms</metric>
+          <metric name="concurrent_requests">10 requests</metric>
+          <metric name="websocket_latency">500ms</metric>
+          <metric name="api_availability">99.9%</metric>
+        </performance-baseline>
+      </story-analysis>
+
+      <story-analysis id="1.6" status="COMPLETED">
+        <title>NPU性能优化</title>
+        <completion-rate>85%</completion-rate>
+        <key-components>
+          <component>src/modules/asr/performance/npu_accelerator.py - 已优化BPU检测逻辑</component>
+          <component>性能诊断工具和基准测试套件</component>
+        </key-components>
+        <test-coverage>80%</test-coverage>
+        <performance-baseline>
+          <metric name="npu_inference_time">8580ms (目标<50ms)</metric>
+          <metric name="real_time_factor">8.58 (目标<0.3)</metric>
+          <metric name="fps">0.12 (目标>50)</metric>
+          <metric name="bpu_memory_usage">需要优化</metric>
+        </performance-baseline>
+        <critical-issues>
+          <issue severity="CRITICAL">NPU推理性能严重不达标 - 171倍差距</issue>
+          <issue severity="HIGH">127MB模型超出BPU内存容量</issue>
+          <issue severity="HIGH">模型加载到DDR而非BPU内存</issue>
+          <issue severity="MEDIUM">模型量化配置需要优化</issue>
+        </critical-issues>
+      </story-analysis>
+    </existing-code-analysis>
+
+    <!-- 依赖关系分析 -->
+    <dependency-analysis>
+      <module-dependencies>
+        <dependency from="asr_core" to="performance/npu_accelerator" type="runtime" critical="true">
+          ASR核心引擎依赖NPU加速器进行高性能推理
+        </dependency>
+        <dependency from="asr_core_optimized" to="performance/*" type="runtime" critical="true">
+          优化版ASR引擎依赖所有性能优化模块
+        </dependency>
+        <dependency from="streaming/*" to="monitoring/*" type="runtime" critical="true">
+          流式处理模块依赖监控模块进行健康检查
+        </dependency>
+        <dependency from="api/*" to="asr_core_optimized" type="runtime" critical="true">
+          API服务依赖优化版ASR引擎提供识别服务
+        </dependency>
+        <dependency from="preprocessing/*" to="asr_core" type="runtime" critical="false">
+          音频预处理是ASR的可选前置处理步骤
+        </dependency>
+      </module-dependencies>
+
+      <interface-standards>
+        <interface name="ros2-topics">
+          <standard>DDS communication with QoS profiles</standard>
+          <topics>
+            <topic name="/audio/input" type="std_msgs/AudioData" direction="subscribe"/>
+            <topic name="/asr/result" type="asr_msgs/ASRResult" direction="publish"/>
+            <topic name="/system/status" type="system_msgs/Status" direction="publish/subscribe"/>
+          </topics>
+        </interface>
+        <interface name="rest-api">
+          <standard>FastAPI with OpenAPI 3.0 specification</standard>
+          <endpoints>
+            <endpoint path="/api/v1/asr/recognize" method="POST"/>
+            <endpoint path="/api/v1/asr/recognize-async" method="POST"/>
+            <endpoint path="/api/v1/asr/status/{task_id}" method="GET"/>
+            <endpoint path="/api/v1/health" method="GET"/>
+          </endpoints>
+        </interface>
+        <interface name="websocket-api">
+          <standard>WebSocket with JSON messaging protocol</standard>
+          <endpoint path="ws://host:port/ws/v1/asr/stream"/>
+        </interface>
+      </interface-standards>
+    </dependency-analysis>
+
+    <!-- 性能基线分析 -->
+    <performance-baseline-analysis>
+      <current-performance-snapshot date="2025-11-12">
+        <system-overall>
+          <metric name="total_completion_rate" value="80%" target="100%"/>
+          <metric name="code_coverage" value="85%" target="90%"/>
+          <metric name="test_pass_rate" value="70%" target="95%"/>
+          <metric name="document_completeness" value="90%" target="100%"/>
+        </system-overall>
+
+        <asr-module-performance>
+          <metric name="recognition_accuracy" value="85%" target="90%"/>
+          <metric name="response_time_cpu" value="2000ms" target="2000ms"/>
+          <metric name="response_time_npu" value="8580ms" target="50ms"/>
+          <metric name="memory_usage_per_instance" value="500MB" target="500MB"/>
+          <metric name="concurrent_sessions" value="10" target="10"/>
+        </asr-module-performance>
+
+        <npu-performance-analysis>
+          <metric name="inference_time" value="8580ms" target="50ms" status="CRITICAL"/>
+          <metric name="real_time_factor" value="8.58" target="0.3" status="CRITICAL"/>
+          <metric name="fps" value="0.12" target="50" status="CRITICAL"/>
+          <metric name="bpu_utilization" value="80%" target="95%" status="WARNING"/>
+          <metric name="model_load_time" value="3263ms" target="500ms" status="HIGH"/>
+        </npu-performance-analysis>
+
+        <stability-metrics>
+          <metric name="continuous_session_duration" value="30min" target="60min"/>
+          <metric name="memory_leak_rate" value="unknown" target="0MB/hour" status="UNKNOWN"/>
+          <metric name="error_recovery_rate" value="95%" target="99%"/>
+          <metric name="system_uptime" value="unknown" target="99.9%" status="UNKNOWN"/>
+        </stability-metrics>
+      </current-performance-snapshot>
+
+      <performance-bottlenecks>
+        <bottleneck id="1" severity="CRITICAL" component="NPU Accelerator">
+          <description>NPU推理性能严重不达标，存在171倍性能差距</description>
+          <impact>系统无法满足实时性要求</impact>
+          <root_cause>
+            <cause>127MB模型超出BPU内存容量</cause>
+            <cause>模型加载到DDR而非BPU内存</cause>
+            <cause>模型未经过量化优化</cause>
+            <cause>BPU推理调用链需要优化</cause>
+          </root_cause>
+        </bottleneck>
+
+        <bottleneck id="2" severity="HIGH" component="Memory Management">
+          <description>长期运行内存使用情况未验证，可能存在内存泄漏</description>
+          <impact>系统稳定性风险，长期运行可能崩溃</impact>
+          <root_cause>
+            <cause>内存监控机制不完善</cause>
+            <cause>内存池管理需要优化</cause>
+            <cause>垃圾回收策略需要调优</cause>
+          </root_cause>
+        </bottleneck>
+
+        <bottleneck id="3" severity="MEDIUM" component="System Monitoring">
+          <description>系统监控和告警机制不完善</description>
+          <impact>生产环境问题难以及时发现和处理</impact>
+          <root_cause>
+            <cause>监控指标覆盖不全</cause>
+            <cause>告警策略未建立</cause>
+            <cause>日志管理不规范</cause>
+          </root_cause>
+        </bottleneck>
+      </performance-bottlenecks>
+    </performance-baseline-analysis>
+
+    <!-- 技术约束分析 -->
+    <technical-constraints-analysis>
+      <epic-1-constraints>
+        <constraint id="E1-1" type="architecture" status="ENFORCED">
+          <description>严格遵循ROS2分布式架构</description>
+          <verification>所有模块通过ROS2 DDS通信</verification>
+        </constraint>
+        <constraint id="E1-2" type="hardware" status="ENFORCED">
+          <description>硬件平台限制：RDK X5 (8GB RAM)</description>
+          <verification>系统适配RDK X5平台</verification>
+        </constraint>
+        <constraint id="E1-3" type="performance" status="PARTIALLY_MET">
+          <description>端到端交互时间<5秒</description>
+          <verification>ASR部分响应时间超标</verification>
+        </constraint>
+        <constraint id="E1-4" type="language" status="ENFORCED">
+          <description>主要支持粤语，可扩展普通话、英语</description>
+          <verification>SenseVoiceSmall多语言模型</verification>
+        </constraint>
+      </epic-1-constraints>
+
+      <iteration-1-constraints>
+        <constraint id="I1-1" type="deployment" status="ENFORCED">
+          <description>纯在线架构，无离线模式</description>
+          <verification>所有服务需要网络连接</verification>
+        </constraint>
+        <constraint id="I1-2" type="scaling" status="ENFORCED">
+          <description>支持单机部署，预留集群扩展接口</description>
+          <verification>容器化设计支持未来扩展</verification>
+        </constraint>
+        <constraint id="I1-3" type="security" status="PARTIALLY_MET">
+          <description>基础安全机制，JWT认证</description>
+          <verification>API认证已实现，需要加强</verification>
+        </constraint>
+      </iteration-1-constraints>
+    </technical-constraints-analysis>
+  </brownfield-analysis>
+
+  <!-- 优化目标分析 -->
+  <optimization-goals>
+    <primary-goals>
+      <goal id="G1" priority="CRITICAL" category="Performance">
+        <description>NPU推理性能优化</description>
+        <target-metrics>
+          <metric name="inference_time" current="8580ms" target="50ms"/>
+          <metric name="real_time_factor" current="8.58" target="0.3"/>
+          <metric name="fps" current="0.12" target="50"/>
+        </target-metrics>
+        <success-criteria>
+          <criterion>NPU推理时间减少到50ms以内</criterion>
+          <criterion>实时因子RTF < 0.3</criterion>
+          <criterion>处理能力达到50+ FPS</criterion>
+        </success-criteria>
+      </goal>
+
+      <goal id="G2" priority="HIGH" category="Stability">
+        <description>系统长期稳定性保障</description>
+        <target-metrics>
+          <metric name="continuous_uptime" current="unknown" target="24h+"/>
+          <metric name="memory_leak_rate" current="unknown" target="0MB/hour"/>
+          <metric name="error_recovery_rate" current="95%" target="99%"/>
+        </target-metrics>
+        <success-criteria>
+          <criterion>系统能够连续稳定运行24小时以上</criterion>
+          <criterion>内存使用稳定，无明显泄漏</criterion>
+          <criterion>异常自动恢复成功率>99%</criterion>
+        </success-criteria>
+      </goal>
+
+      <goal id="G3" priority="HIGH" category="Monitoring">
+        <description>完善监控和告警体系</description>
+        <target-metrics>
+          <metric name="monitoring_coverage" current="60%" target="95%"/>
+          <metric name="alert_response_time" current="unknown" target="5min"/>
+          <metric name="log_retention" current="unknown" target="30天"/>
+        </target-metrics>
+        <success-criteria>
+          <criterion>关键系统指标监控覆盖率>95%</criterion>
+          <criterion>异常告警响应时间<5分钟</criterion>
+          <criterion>完整日志管理和分析能力</criterion>
+        </success-criteria>
+      </goal>
+
+      <goal id="G4" priority="MEDIUM" category="Deployment">
+        <description>容器化和自动化部署</description>
+        <target-metrics>
+          <metric name="deployment_time" current="manual" target="30min"/>
+          <metric name="deployment_success_rate" current="unknown" target="95%"/>
+          <metric name="rollback_time" current="unknown" target="10min"/>
+        </target-metrics>
+        <success-criteria>
+          <criterion>完全容器化部署</criterion>
+          <criterion>自动化部署流水线</criterion>
+          <criterion>快速回滚能力</criterion>
+        </success-criteria>
+      </goal>
+    </primary-goals>
+
+    <secondary-goals>
+      <goal id="G5" priority="MEDIUM" category="Documentation">
+        <description>完善部署和运维文档</description>
+        <target-metrics>
+          <metric name="documentation_completeness" current="90%" target="100%"/>
+          <metric name="operation_guide_quality" current="good" target="excellent"/>
+        </target-metrics>
+      </goal>
+
+      <goal id="G6" priority="LOW" category="Security">
+        <description>加强系统安全机制</description>
+        <target-metrics>
+          <metric name="security_coverage" current="basic" target="comprehensive"/>
+        </target-metrics>
+      </goal>
+    </secondary-goals>
+  </optimization-goals>
+
+  <acceptanceCriteria>
+    <criterion id="1">
+      <description>NPU推理性能优化达标 - 推理时间<50ms，RTF<0.3，FPS>50</description>
+      <measurement>
+        <metric>npu_performance_improvement</metric>
+        <target>100% performance targets met</target>
+        <threshold>90% targets met</threshold>
+      </measurement>
+      <test_approach>NPU性能基准测试套件验证</test_approach>
+    </criterion>
+
+    <criterion id="2">
+      <description>系统长期稳定性验证 - 连续运行24小时无故障</description>
+      <measurement>
+        <metric>system_stability_duration</metric>
+        <target>>24 hours continuous uptime</target>
+        <threshold>Min 12 hours</threshold>
+      </measurement>
+      <test_approach>长期稳定性压力测试</test_approach>
+    </criterion>
+
+    <criterion id="3">
+      <description>内存泄漏修复 - 内存使用稳定，增长率<1MB/hour</description>
+      <measurement>
+        <metric>memory_leak_rate</metric>
+        <target><1MB/hour</target>
+        <threshold><5MB/hour</threshold>
+      </measurement>
+      <test_approach>内存监控和泄漏检测测试</test_approach>
+    </criterion>
+
+    <criterion id="4">
+      <description>监控系统完善 - 关键指标监控覆盖率>95%</description>
+      <measurement>
+        <metric>monitoring_coverage</metric>
+        <target>>95%</target>
+        <threshold>90%</threshold>
+      </measurement>
+      <test_approach>监控指标完整性验证</test_approach>
+    </criterion>
+
+    <criterion id="5">
+      <description>容器化部署就绪 - Docker镜像构建和编排配置完成</description>
+      <measurement>
+        <metric>deployment_readiness</metric>
+        <target>Complete containerized deployment</target>
+        <threshold>Basic containerization</threshold>
+      </measurement>
+      <test_approach>容器化部署测试验证</test_approach>
+    </criterion>
+
+    <criterion id="6">
+      <description>生产环境压力测试通过 - 支持10路并发，系统可用性>99.9%</description>
+      <measurement>
+        <metric>production_stress_test</metric>
+        <target>All stress tests passed</target>
+        <threshold>90% tests passed</threshold>
+      </measurement>
+      <test_approach>完整生产环境压力测试</test_approach>
+    </criterion>
+
+    <criterion id="7">
+      <description>部署文档和运维手册完整度100%</description>
+      <measurement>
+        <metric>documentation_completeness</metric>
+        <target>100% complete</target>
+        <threshold>95% complete</threshold>
+      </measurement>
+      <test_approach>文档完整性检查和验证</test_approach>
+    </criterion>
+
+    <criterion id="8">
+      <description>Brownfield Level 4合规性验证 - 现有系统修改<20%</description>
+      <measurement>
+        <metric>brownfield_compliance</metric>
+        <target><20% existing code modified</target>
+        <threshold><30% modifications</threshold>
+      </measurement>
+      <test_approach>代码变更影响分析</test_approach>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="bmad/bmm/output/tech-spec-epic-1-asr.md" title="Epic 1 技术规格 - 语音识别模块">
+        <section>System Architecture Alignment - ROS2分布式架构设计</section>
+        <section>Services and Modules - 组件职责和接口定义</section>
+        <section>Performance Requirements - 性能目标和约束</section>
+        <snippet>基于FunASR框架和SenseVoiceSmall模型，集成NPU/BPU硬件加速，实现高性能、低延迟的语音识别服务</snippet>
+      </doc>
+      <doc path="EPIC1_FINAL_COMPLETION_REPORT.md" title="Epic 1 最终完成报告">
+        <section>系统完成度分析 - 80%整体完成度</section>
+        <section>功能验证结果 - 70%测试通过率</section>
+        <section>核心语音交互流程验证</section>
+        <snippet>Epic 1从22.5%完成度提升至80%完成度，核心功能验证良好</snippet>
+      </doc>
+      <doc path="archive/legacy-docs/implementation-reports/optimization-reports/story-1.6-npu-optimization-final-report.md" title="Story 1.6 NPU优化最终报告">
+        <section>性能基准测试结果 - NPU性能差距分析</section>
+        <section>6阶段诊断流程 - 完整问题诊断</section>
+        <section>关键发现和优化建议</section>
+        <snippet>NPU推理性能严重不达标，存在171倍性能差距，需要重点优化</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file path="src/modules/asr/asr_core.py" kind="core-module" status="COMPLETED">
+        <symbol>ASREngine</symbol>
+        <lines>1-200</lines>
+        <reason>ASR核心引擎，基础功能完成，需要性能优化集成</reason>
+        <modifications-estimated>5%</modifications-estimated>
+      </file>
+      <file path="src/modules/asr/asr_core_optimized.py" kind="optimized-module" status="COMPLETED">
+        <symbol>OptimizedASREngine</symbol>
+        <lines>1-300</lines>
+        <reason>优化版ASR引擎，集成所有性能优化模块</reason>
+        <modifications-estimated>15%</modifications-estimated>
+      </file>
+      <file path="src/modules/asr/performance/npu_accelerator.py" kind="critical-module" status="NEEDS_OPTIMIZATION">
+        <symbol>NPUAccelerator</symbol>
+        <lines>1-200</lines>
+        <reason>NPU加速器，性能严重不达标，需要重点优化</reason>
+        <modifications-estimated>40%</modifications-estimated>
+      </file>
+      <file path="src/modules/asr/performance/quantizer.py" kind="optimization-module" status="COMPLETED">
+        <symbol>ModelQuantizer</symbol>
+        <lines>1-150</lines>
+        <reason>模型量化器，支持INT8/FP16量化</reason>
+        <modifications-estimated>10%</modifications-estimated>
+      </file>
+      <file path="src/modules/asr/monitoring/performance_monitor.py" kind="monitoring-module" status="COMPLETED">
+        <symbol>PerformanceMonitor</symbol>
+        <lines>1-180</lines>
+        <reason>性能监控模块，需要扩展监控指标</reason>
+        <modifications-estimated>20%</modifications-estimated>
+      </file>
+      <file path="src/modules/asr/monitoring/memory_monitor.py" kind="monitoring-module" status="COMPLETED">
+        <symbol>MemoryMonitor</symbol>
+        <lines>1-150</lines>
+        <reason>内存监控模块，需要加强泄漏检测</reason>
+        <modifications-estimated>25%</modifications-estimated>
+      </file>
+      <file path="src/modules/asr/api/server.py" kind="api-module" status="COMPLETED">
+        <symbol>ASRServer</symbol>
+        <lines>1-200</lines>
+        <reason>API服务器，需要添加监控和健康检查</reason>
+        <modifications-estimated>10%</modifications-estimated>
+      </file>
+      <file path="src/modules/system_control/architecture.py" kind="system-module" status="COMPLETED">
+        <symbol>SystemArchitecture</symbol>
+        <lines>1-300</lines>
+        <reason>系统架构管理，需要添加部署配置</reason>
+        <modifications-estimated>15%</modifications-estimated>
+      </file>
+    </code>
+
+    <dependencies>
+      <ecosystem name="python">
+        <package name="funasr" version=">=1.0.0" status="STABLE">FunASR语音识别框架</package>
+        <package name="torch" version=">=2.0.0" status="STABLE">深度学习框架</package>
+        <package name="onnxruntime" version=">=1.15.0" status="STABLE">ONNX推理引擎</package>
+        <package name="fastapi" version=">=0.68.0" status="STABLE">Web API框架</package>
+        <package name="uvicorn" version=">=0.15.0" status="STABLE">ASGI服务器</package>
+        <package name="prometheus-client" version=">=0.11.0" status="TO_ADD">监控指标库</package>
+        <package name="psutil" version=">=5.8.0" status="TO_ADD">系统监控库</package>
+        <package name="docker" version=">=5.0.0" status="TO_ADD">Docker Python SDK</package>
+      </ecosystem>
+      <ecosystem name="system">
+        <package name="docker.io" version=">=20.10">容器运行时</package>
+        <package name="docker-compose" version=">=1.29">容器编排工具</package>
+        <package name="horizon-ai-sdk" version=">=3.0" status="CRITICAL">地平线BPU SDK</package>
+        <package name="hobot-dnn" version=">=1.24" status="CRITICAL">BPU推理库</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="brownfield-level-4">严格遵循Brownfield Level 4标准，现有代码修改不超过20%</constraint>
+    <constraint type="architecture">严格遵循ROS2节点设计模式，保持分布式架构</constraint>
+    <constraint type="performance">NPU推理性能必须达到实时要求：推理时间<50ms，RTF<0.3</constraint>
+    <constraint type="stability">系统必须支持24小时以上连续稳定运行</constraint>
+    <constraint type="memory">内存使用必须稳定，内存泄漏率<1MB/hour</constraint>
+    <constraint type="monitoring">关键系统指标监控覆盖率必须>95%</constraint>
+    <constraint type="deployment">必须支持容器化部署和自动化部署</constraint>
+    <constraint type="hardware">严格遵循RDK X5硬件平台约束 (8GB RAM)</constraint>
+    <constraint type="epic-constraint">严格遵循Epic 1纯在线架构约束，无离线模式</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Monitoring API" kind="metrics">
+      <signature>/metrics (Prometheus format)</signature>
+      <path>src/modules/monitoring/prometheus_exporter.py</path>
+      <description>系统监控指标导出接口</description>
+    </interface>
+    <interface name="Health Check API" kind="health">
+      <signature>/health</signature>
+      <path>src/modules/asr/api/health_check.py</path>
+      <description>系统健康检查接口</description>
+    </interface>
+    <interface name="Performance Profiling API" kind="profiling">
+      <signature>/debug/profile</signature>
+      <path>src/modules/monitoring/profiler.py</path>
+      <description>性能分析和调优接口</description>
+    </interface>
+    <interface name="Docker Deployment Interface" kind="deployment">
+      <signature>docker-compose.yml</signature>
+      <path>deployment/docker-compose.yml</path>
+      <description>容器化部署配置接口</description>
+    </interface>
+    <interface name="System Status ROS2 Topic" kind="topic">
+      <signature>/system/status (publisher)</signature>
+      <path>src/modules/system_control/status_publisher.py</path>
+      <description>系统状态发布主题</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Story 1.8测试策略遵循Brownfield Level 4标准，重点关注系统优化验证和部署就绪性测试。
+      必须覆盖：NPU性能优化验证、长期稳定性测试、内存泄漏检测、监控完整性验证、
+      容器化部署测试、生产环境压力测试。测试覆盖率要求>90%，关键优化路径必须100%覆盖。
+      性能基准测试必须验证所有优化目标达成，部署测试必须验证生产环境就绪性。
+    </standards>
+    <locations>
+      <location pattern="src/modules/asr/tests/test_npu_performance_optimization.py">NPU性能优化测试</location>
+      <location pattern="src/modules/asr/tests/test_long_term_stability.py">长期稳定性测试</location>
+      <location pattern="src/modules/asr/tests/test_memory_leak_detection.py">内存泄漏检测测试</location>
+      <location pattern="src/modules/monitoring/tests/test_monitoring_coverage.py">监控覆盖完整性测试</location>
+      <location pattern="tests/deployment/test_container_deployment.py">容器化部署测试</location>
+      <location pattern="tests/performance/test_production_stress.py">生产环境压力测试</location>
+      <location pattern="tests/integration/test_end_to_end_optimization.py">端到端优化验证测试</location>
+    </locations>
+    <ideas>
+      <test-idea ref="AC1">
+        <scenario>NPU性能优化验证测试</scenario>
+        <steps>
+          1. 运行NPU基准测试套件
+          2. 验证推理时间<50ms
+          3. 验证实时因子RTF<0.3
+          4. 验证FPS>50
+          5. 对比优化前后性能数据
+        </steps>
+      </test-idea>
+      <test-idea ref="AC2">
+        <scenario>24小时长期稳定性测试</scenario>
+        <steps>
+          1. 启动完整系统
+          2. 运行连续负载测试
+          3. 监控系统资源使用
+          4. 验证内存泄漏<1MB/hour
+          5. 验证无系统崩溃
+        </steps>
+      </test-idea>
+      <test-idea ref="AC3">
+        <scenario>监控系统完整性验证</scenario>
+        <steps>
+          1. 检查所有监控指标覆盖
+          2. 验证告警机制工作正常
+          3. 测试监控数据准确性
+          4. 验证日志管理功能
+        </steps>
+      </test-idea>
+      <test-idea ref="AC5">
+        <scenario>容器化部署测试</scenario>
+        <steps>
+          1. 构建Docker镜像
+          2. 启动容器化服务
+          3. 验证服务间通信
+          4. 测试负载均衡
+          5. 验证快速部署能力
+        </steps>
+      </test-idea>
+    </ideas>
+  </tests>
+
+  <risks>
+    <risk id="1" level="Critical" category="performance">
+      <description>NPU性能优化可能无法达到目标</description>
+      <impact>系统无法满足实时性要求，影响用户体验</impact>
+      <probability>0.7</probability>
+      <mitigation>
+        <strategy>多级优化方案：模型量化、算法优化、硬件调优</strategy>
+        <strategy>备用降级方案：CPU模式优化</strategy>
+        <strategy>专家支持：寻求地平线技术支持</strategy>
+      </mitigation>
+      <owner>Performance Optimization Team</owner>
+      <deadline>Week 2</deadline>
+    </risk>
+    <risk id="2" level="High" category="stability">
+      <description>长期运行可能出现未知稳定性问题</description>
+      <impact>系统在生产环境中可能崩溃或性能下降</impact>
+      <probability>0.5</probability>
+      <mitigation>
+        <strategy>全面压力测试和稳定性测试</strategy>
+        <strategy>完善监控和告警机制</strategy>
+        <strategy>建立快速故障恢复流程</strategy>
+      </mitigation>
+    </risk>
+    <risk id="3" level="Medium" category="deployment">
+      <description>容器化部署可能遇到兼容性问题</description>
+      <影响>部署过程可能延迟或失败</impact>
+      <probability>0.4</probability>
+      <mitigation>
+        <strategy>多环境测试验证</strategy>
+        <strategy>详细部署文档和故障排除指南</strategy>
+        <strategy>自动化部署流水线</strategy>
+      </mitigation>
+    </risk>
+    <risk id="4" level="Low" category="brownfield">
+      <description>现有系统修改可能超出20%限制</description>
+      <impact>违反Brownfield Level 4标准</impact>
+      <probability>0.3</probability>
+      <mitigation>
+        <strategy>严格控制代码变更范围</strategy>
+        <strategy>优先采用配置优化而非代码重构</strategy>
+        <strategy>定期进行变更影响分析</strategy>
+      </mitigation>
+    </risk>
+  </risks>
+
+  <implementation-plan>
+    <phase name="Phase 1: NPU性能优化" duration="2 weeks" priority="Critical">
+      <activities>
+        <activity>模型量化和优化（INT8/FP16）</activity>
+        <activity>BPU内存管理优化</activity>
+        <activity>推理算法调优</activity>
+        <activity>性能基准测试验证</activity>
+      </activities>
+      <deliverables>
+        <deliverable>优化后的量化模型</deliverable>
+        <deliverable>BPU推理性能提升报告</deliverable>
+        <deliverable>性能基准测试通过验证</deliverable>
+      </deliverables>
+    </phase>
+
+    <phase name="Phase 2: 稳定性优化" duration="2 weeks" priority="High">
+      <activities>
+        <activity>内存泄漏检测和修复</activity>
+        <activity>长期稳定性测试</activity>
+        <activity>异常恢复机制完善</activity>
+        <activity>资源管理优化</activity>
+      </activities>
+      <deliverables>
+        <deliverable>内存泄漏修复验证报告</deliverable>
+        <deliverable>24小时稳定性测试报告</deliverable>
+        <deliverable>异常自动恢复机制</deliverable>
+      </deliverables>
+    </phase>
+
+    <phase name="Phase 3: 监控和告警" duration="1 week" priority="High">
+      <activities>
+        <activity>监控指标体系完善</activity>
+        <activity>告警策略配置</activity>
+        <activity>日志管理系统搭建</activity>
+        <activity>监控仪表板部署</activity>
+      </activities>
+      <deliverables>
+        <deliverable>完整监控指标体系</deliverable>
+        <deliverable>告警配置和响应流程</deliverable>
+        <deliverable>监控仪表板</deliverable>
+      </deliverables>
+    </phase>
+
+    <phase name="Phase 4: 容器化部署" duration="1 week" priority="Medium">
+      <activities>
+        <activity>Docker镜像构建</activity>
+        <activity>容器编排配置</activity>
+        <activity>自动化部署流水线</activity>
+        <activity>部署文档编写</activity>
+      </activities>
+      <deliverables>
+        <deliverable>容器化部署方案</deliverable>
+        <deliverable>自动化部署流水线</deliverable>
+        <deliverable>完整部署文档</deliverable>
+      </deliverables>
+    </phase>
+
+    <phase name="Phase 5: 生产验证" duration="1 week" priority="High">
+      <activities>
+        <activity>生产环境压力测试</activity>
+        <activity>性能基准验证</activity>
+        <activity>部署就绪性检查</activity>
+        <activity>最终验收测试</activity>
+      </activities>
+      <deliverables>
+        <deliverable>生产环境测试报告</deliverable>
+        <deliverable>部署就绪性验证报告</deliverable>
+        <deliverable>Story 1.8完成报告</deliverable>
+      </deliverables>
+    </phase>
+  </implementation-plan>
+
+  <success-metrics>
+    <metric category="Performance">
+      <name>npu_inference_time</name>
+      <target>&lt;50ms</target>
+      <current>8580ms</current>
+      <unit>milliseconds</unit>
+      <measurement_period>continuous</measurement_period>
+      <weight>0.3</weight>
+    </metric>
+    <metric category="Performance">
+      <name>real_time_factor</name>
+      <target>&lt;0.3</target>
+      <current>8.58</current>
+      <unit>ratio</unit>
+      <measurement_period>continuous</measurement_period>
+      <weight>0.2</weight>
+    </metric>
+    <metric category="Stability">
+      <name>continuous_uptime</name>
+      <target>>24 hours</target>
+      <current>unknown</current>
+      <unit>hours</unit>
+      <measurement_period>per session</measurement_period>
+      <weight>0.2</weight>
+    </metric>
+    <metric category="Stability">
+      <name>memory_leak_rate</name>
+      <target>&lt;1MB/hour</target>
+      <current>unknown</current>
+      <unit>MB/hour</unit>
+      <measurement_period>continuous</measurement_period>
+      <weight>0.15</weight>
+    </metric>
+    <metric category="Monitoring">
+      <name>monitoring_coverage</name>
+      <target>>95%</target>
+      <current>60%</current>
+      <unit>percentage</unit>
+      <measurement_period>per audit</measurement_period>
+      <weight>0.1</weight>
+    </metric>
+    <metric category="Deployment">
+      <name>deployment_success_rate</name>
+      <target>95%</target>
+      <current>unknown</current>
+      <unit>percentage</unit>
+      <measurement_period>per deployment</measurement_period>
+      <weight>0.05</weight>
+    </metric>
+  </success-metrics>
+
+  <brownfield-compliance>
+    <level-4-requirements>
+      <requirement id="BF4-1" status="PLANNED">
+        <description>现有代码修改不超过20%</description>
+        <current-estimate>15-20%</current-estimate>
+        <mitigation>严格控制重构范围，优先配置优化</mitigation>
+      </requirement>
+      <requirement id="BF4-2" status="PLANNED">
+        <description>保持现有接口兼容性</description>
+        <current-impact>API接口保持不变</current-impact>
+        <mitigation>通过配置和插件机制扩展功能</mitigation>
+      </requirement>
+      <requirement id="BF4-3" status="PLANNED">
+        <description>增量式改进策略</description>
+        <current-approach>分阶段优化，每阶段独立验证</current-approach>
+        <mitigation>建立回滚机制，确保可逆性</mitigation>
+      </requirement>
+    </level-4-requirements>
+  </brownfield-compliance>
+
+  <context-notes>
+    <note id="1" category="performance-critical">
+      NPU性能优化是Story 1.8的最关键任务，直接决定系统是否满足实时性要求
+    </note>
+    <note id="2" category="brownfield-constraint">
+      必须严格遵守Brownfield Level 4标准，现有代码修改控制在20%以内
+    </note>
+    <note id="3" category="epic-alignment">
+      所有优化必须符合Epic 1纯在线架构约束，不能引入离线模式
+    </note>
+    <note id="4" category="deployment-readiness">
+      最终目标是系统生产部署就绪，包括监控、告警、容器化等完整方案
+    </note>
+    <note id="5" category="measurement-focus">
+      所有优化必须有量化指标验证，避免主观判断
+    </note>
+  </context-notes>
+
+  <related-stories>
+    <related_story id="1.1" relationship="builds_on">
+      粤语语音识别基础功能 - 优化ASR核心性能
+    </related_story>
+    <related_story id="1.2" relationship="builds_on">
+      实时语音识别优化 - 重点解决NPU性能问题
+    </related_story>
+    <related_story id="1.3" relationship="builds_on">
+      噪声抑制和音频预处理 - 优化预处理性能和稳定性
+    </related_story>
+    <related_story id="1.4" relationship="builds_on">
+      连续语音识别 - 解决长期运行稳定性问题
+    </related_story>
+    <related_story id="1.5" relationship="builds_on">
+      ASR服务接口 - 完善API监控和部署能力
+    </related_story>
+    <related_story id="1.6" relationship="builds_on">
+      NPU性能优化 - 重点解决171倍性能差距问题
+    </related_story>
+  </related-stories>
+
+  <workload-estimates>
+    <phase name="Phase 1: NPU性能优化">
+      <estimated-effort>80 hours</estimated-effort>
+      <complexity>Very High</complexity>
+      <risk_level>Critical</risk_level>
+      <skills_required>
+        <skill>NPU/BPU Optimization</skill>
+        <skill>Model Quantization</skill>
+        <skill>Performance Tuning</skill>
+        <skill>Hardware Acceleration</skill>
+      </skills_required>
+    </phase>
+    <phase name="Phase 2: 稳定性优化">
+      <estimated-effort>60 hours</estimated-effort>
+      <complexity>High</complexity>
+      <risk_level>High</risk_level>
+      <skills_required>
+        <skill>Memory Management</skill>
+        <skill>Stability Testing</skill>
+        <skill>Performance Analysis</skill>
+      </skills_required>
+    </phase>
+    <phase name="Phase 3: 监控和告警">
+      <estimated-effort>40 hours</estimated-effort>
+      <complexity>Medium</complexity>
+      <risk_level>Medium</risk_level>
+      <skills_required>
+        <skill>Monitoring Systems</skill>
+        <skill>Alert Management</skill>
+        <skill>Prometheus/Grafana</skill>
+      </skills_required>
+    </phase>
+    <phase name="Phase 4: 容器化部署">
+      <estimated-effort>40 hours</estimated-effort>
+      <complexity>Medium</complexity>
+      <risk_level>Medium</risk_level>
+      <skills_required>
+        <skill>Docker/Kubernetes</skill>
+        <skill>DevOps</skill>
+        <skill>Deployment Automation</skill>
+      </skills_required>
+    </phase>
+    <phase name="Phase 5: 生产验证">
+      <estimated-effort>40 hours</estimated-effort>
+      <complexity>High</complexity>
+      <risk_level>High</risk_level>
+      <skills_required>
+        <skill>Production Testing</skill>
+        <skill>Performance Validation</skill>
+        <skill>Quality Assurance</skill>
+      </skills_required>
+    </phase>
+    <total-effort>260 hours (about 7 weeks)</total-effort>
+  </workload-estimates>
+
+</story-context>

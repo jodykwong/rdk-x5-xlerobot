@@ -1,0 +1,12 @@
+# 连续语音识别动作
+# 目标定义
+uint32 timeout            # 超时时间(秒)
+bool enable_intermediate # 启用中间结果
+---
+# 反馈定义
+string intermediate_text   # 中间识别文本
+float32 confidence         # 置信度
+---
+# 结果定义
+bool success               # 是否成功
+string message             # 消息

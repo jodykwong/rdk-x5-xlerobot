@@ -1,0 +1,64 @@
+# 阿里云TTS配置
+# =================
+
+# 阿里云访问配置
+# 请从环境变量中获取，或直接配置（不推荐）
+access_key_id: "${ALIBABA_CLOUD_ACCESS_KEY_ID}"
+access_key_secret: "${ALIBABA_CLOUD_ACCESS_KEY_SECRET}"
+app_key: "${ALIBABA_CLOUD_APP_KEY}"
+token: "${ALIBABA_CLOUD_TOKEN}"
+
+# 区域和端点
+region: "cn-shanghai"
+endpoint: "https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/tts"
+
+# 默认粤语音色配置
+default_voice: "xiaoxiao"
+default_volume: 50
+default_format: "wav"
+default_sample_rate: 22050
+
+# 可用粤语音色列表
+cantonese_voices:
+  xiaoxiao: "晓晓（标准女声）"
+  xiaoyi: "晓伊（温柔女声）"
+  xiaoming: "晓峰（稳重男声）"
+  xiaoyun: "晓云（知性女声）"
+
+# 合成参数范围
+synthesis_params:
+  speed_range: [-500, 500]    # 语速
+  volume_range: [0, 100]      # 音量
+  pitch_range: [0.5, 2.0]     # 音调
+  sample_rates: [16000, 22050, 24000, 44100]  # 采样率
+
+# 缓存配置
+cache:
+  enabled: true
+  cache_dir: "/tmp/aliyun_tts_cache"
+  max_size: 500
+  ttl: 3600  # 1小时
+
+# 性能配置
+performance:
+  timeout: 10          # 请求超时（秒）
+  max_retries: 3       # 最大重试次数
+  retry_delay: 1.0     # 重试延迟（秒）
+
+# 日志配置
+logging:
+  level: "INFO"
+  enable_profiling: false
+
+# 音频格式配置
+audio:
+  format: "wav"              # 输出格式
+  sample_rate: 22050         # 默认采样率
+  channels: 1                # 声道数（单声道）
+  bit_depth: 16              # 位深度
+
+# 安全配置
+security:
+  verify_ssl: true
+  max_text_length: 1000      # 最大文本长度
+  rate_limit: 100            # 每分钟最大请求数

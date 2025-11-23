@@ -1,0 +1,775 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context xmlns="http://bmad-method.org/v6/story-context"
+               version="6.0"
+               brownfield-level="4"
+               workflow="story-context"
+               story-id="1.2"
+               project="xlerobot">
+
+    <!-- ============================================================= -->
+    <!-- 📋 文档元信息 -->
+    <!-- ============================================================= -->
+    <metadata>
+        <document-id>XLR-STORY-P4-20251109-004</document-id>
+        <project-name>XleRobot 家用机器人控制系统 - Phase 4 Implementation</project-name>
+        <story-id>1.2</story-id>
+        <story-title>粤语ASR优化 (Cantonese ASR Optimization)</story-title>
+        <workflow-type>BMad-Method v6 Brownfield Level 4 - story-context</workflow-type>
+        <created-date>2025-11-09</created-date>
+        <last-modified>2025-11-09</last-modified>
+        <author>Scrum Master</author>
+        <reviewer>Scrum Master</reviewer>
+        <status>Ready for Development</status>
+        <iteration>1</iteration>
+        <architecture-type>pure_online</architecture-type>
+        <estimated-development-time>2.5 days</estimated-development-time>
+        <target-code-lines>900</target-code-lines>
+    </metadata>
+
+    <!-- ============================================================= -->
+    <!-- 🎯 用户故事 -->
+    <!-- ============================================================= -->
+    <user-story>
+        <as-a>粤语用户</as-a>
+        <i-want>机器人能够准确识别我的粤语语音输入并在各种环境中稳定工作</i-want>
+        <so-that>我可以用母语与机器人进行自然交流并获得更好的使用体验</so-that>
+
+        <business-value>
+            <item>用户体验提升: 提高粤语用户的满意度和使用便利性</item>
+            <item>技术能力验证: 验证纯在线架构的优化扩展能力</item>
+            <item>市场竞争力: 增强在粤语地区的产品竞争力</item>
+            <item>迭代基础: 为后续离线服务需求收集优化经验</item>
+        </business-value>
+    </user-story>
+
+    <!-- ============================================================= -->
+    <!-- ✅ 验收标准 -->
+    <!-- ============================================================= -->
+    <acceptance-criteria>
+        <criteria id="AC-1" priority="high">
+            <description>粤语识别准确率 >90%</description>
+            <test-method>功能测试</test-method>
+            <success-criteria>标准环境下粤语语音识别准确率达标</success-criteria>
+        </criteria>
+
+        <criteria id="AC-2" priority="high">
+            <description>支持粤语主要方言变体</description>
+            <test-method>功能测试</test-method>
+            <success-criteria>广州、香港、澳门等主要方言变体识别</success-criteria>
+        </criteria>
+
+        <criteria id="AC-3" priority="medium">
+            <description>噪声环境下识别准确率 >80%</description>
+            <test-method>环境测试</test-method>
+            <success-criteria>40-50dB噪声环境下识别准确率</success-criteria>
+        </criteria>
+
+        <criteria id="AC-4" priority="high">
+            <description>网络延迟优化 <2秒</description>
+            <test-method>性能测试</test-method>
+            <success-criteria>端到端响应时间优化到2秒内</success-criteria>
+        </criteria>
+
+        <criteria id="AC-5" priority="medium">
+            <description>连续语音识别支持</description>
+            <test-method>功能测试</test-method>
+            <success-criteria>支持长句和连续语音输入识别</success-criteria>
+        </criteria>
+    </acceptance-criteria>
+
+    <!-- ============================================================= -->
+    <!-- 🔧 现有代码库分析 (基于Story 1.1) -->
+    <!-- ============================================================= -->
+    <existing-codebase-analysis>
+        <codebase-summary>
+            <total-files>7</total-files>
+            <total-lines>~700</total-lines>
+            <language>Python 3.10</language>
+            <framework>ROS2 Humble</framework>
+            <architecture>pure_online</architecture>
+            <primary-dependencies>阿里云NLS API, PyAudio, NumPy</primary-dependencies>
+        </codebase-summary>
+
+        <!-- 可复用组件 -->
+        <reusable-components>
+            <component id="audio-recorder" name="SimpleAudioRecorder" file="src/modules/asr/simple_audio_recorder.py">
+                <reusability>100%</reusability>
+                <description>ALSA音频录制器，16kHz/16-bit/单声道，可直接复用</description>
+                <lines-of-code>290</lines-of-code>
+                <status>production-ready</status>
+            </component>
+
+            <component id="audio-converter" name="AudioConverter" file="src/modules/asr/audio_converter.py">
+                <reusability>100%</reusability>
+                <description>PCM↔WAV↔Base64转换器，确保API兼容性</description>
+                <lines-of-code>384</lines-of-code>
+                <status>production-ready</status>
+            </component>
+
+            <component id="ros2-node" name="SimpleAudioInputNode" file="src/nodes/simple_audio_input_node.py">
+                <reusability>85%</reusability>
+                <description>ROS2音频输入节点，需要扩展优化功能</description>
+                <lines-of-code>411</lines-of-code>
+                <status>needs-enhancement</status>
+            </component>
+
+            <component id="asr-service" name="SimpleAliyunASRService" file="src/modules/asr/simple_aliyun_asr_service.py">
+                <reusability>75%</reusability>
+                <description>基础ASR服务，需要粤语优化和方言支持</description>
+                <lines-of-code>397</lines-of-code>
+                <status>needs-optimization</status>
+            </component>
+
+            <component id="wake-word-service" name="AliyunWakeWordService" file="src/modules/asr/aliyun_wake_word_service.py">
+                <reusability>90%</reusability>
+                <description>唤醒词服务，可直接复用</description>
+                <lines-of-code>~300</lines-of-code>
+                <status>production-ready</status>
+            </component>
+
+            <component id="test-framework" name="SimpleSpeechServicesTester" file="src/test_simple_speech_services.py">
+                <reusability>80%</reusability>
+                <description>测试框架，需要扩展优化功能测试</description>
+                <lines-of-code>474</lines-of-code>
+                <status>needs-enhancement</status>
+            </component>
+        </reusable-components>
+
+        <!-- 扩展点分析 -->
+        <extension-points>
+            <extension-point id="asr-optimization" priority="high">
+                <component>SimpleAliyunASRService</component>
+                <location>recognize_speech()方法</location>
+                <optimization-type>parameter-tuning</optimization-type>
+                <description>优化阿里云ASR API参数配置，提升粤语识别准确率</description>
+                <estimated-impact>+10-15%准确率提升</estimated-impact>
+            </extension-point>
+
+            <extension-point id="dialect-support" priority="high">
+                <component>SimpleAliyunASRService</component>
+                <location>_prepare_request_data()方法</location>
+                <optimization-type>feature-enhancement</optimization-type>
+                <description>添加粤语方言变体检测和模型切换</description>
+                <estimated-impact>支持广州、香港、澳门方言</estimated-impact>
+            </extension-point>
+
+            <extension-point id="noise-adaptation" priority="medium">
+                <component>SimpleAudioRecorder</component>
+                <location>_record_worker()方法</location>
+                <optimization-type>algorithm-enhancement</optimization-type>
+                <description>添加噪声检测和自适应音频处理</description>
+                <estimated-impact>噪声环境下准确率提升到80%+</estimated-impact>
+            </extension-point>
+
+            <extension-point id="performance-optimization" priority="medium">
+                <component>SimpleAliyunASRService</component>
+                <location>_send_request()方法</location>
+                <optimization-type>performance-tuning</optimization-type>
+                <description>优化网络请求和数据压缩，减少响应延迟</description>
+                <estimated-impact>响应时间从3秒优化到2秒内</estimated-impact>
+            </extension-point>
+
+            <extension-point id="continuous-speech" priority="medium">
+                <component>SimpleAudioInputNode</component>
+                <location>start_recording()方法</location>
+                <optimization-type>feature-enhancement</optimization-type>
+                <description>实现长句语音分段和连续识别</description>
+                <estimated-impact>支持自然对话式语音输入</estimated-impact>
+            </extension-point>
+        </extension-points>
+    </existing-codebase-analysis>
+
+    <!-- ============================================================= -->
+    <!-- 🏗️ 技术上下文 -->
+    <!-- ============================================================= -->
+    <technical-context>
+        <system-constraints>
+            <development-environment>ROS2 Humble + Python 3.10</development-environment>
+            <hardware-platform>D-Robotics RDK X5</hardware-platform>
+            <audio-hardware>USB音频 + ES8326芯片</audio-hardware>
+            <audio-parameters>16kHz采样率, 16-bit, 单声道</audio-parameters>
+            <architecture-principle>pure_online - 严格依赖阿里云API</architecture-principle>
+        </system-constraints>
+
+        <performance-targets>
+            <target metric="recognition-accuracy">90%+ (标准环境), 80%+ (噪声环境)</target>
+            <target metric="response-time">&lt;2秒 (端到端延迟)</target>
+            <target metric="stability">&gt;2小时连续运行无故障</target>
+            <target metric="resource-usage">CPU &lt;25%, 内存 &lt;300MB</target>
+            <target metric="code-complexity">~900行 (增量200行)</target>
+        </performance-targets>
+
+        <existing-architecture>
+            <audio-flow>
+                <step>麦克风 → ALSA录音 → 噪声检测 → 音频优化 → PCM→WAV→base64 → 阿里云ASR优化API → 优化结果输出</step>
+                <enhancement>新增噪声检测和音频优化环节</enhancement>
+            </audio-flow>
+
+            <component-architecture>
+                <layer name="Hardware">
+                    <component>USB麦克风 + ES8326芯片</component>
+                </layer>
+                <layer name="Audio-Capture">
+                    <component>SimpleAudioRecorder (复用)</component>
+                    <component>新增: NoiseDetector</component>
+                    <component>新增: AudioEnhancer</component>
+                </layer>
+                <layer name="Format-Conversion">
+                    <component>AudioConverter (复用)</component>
+                </layer>
+                <layer name="Cloud-Services">
+                    <component>优化: SimpleAliyunASRService (+方言支持)</component>
+                    <component>新增: CantoneseASROptimizer</component>
+                    <component>新增: DialectDetector</component>
+                </layer>
+                <layer name="ROS2-Integration">
+                    <component>优化: SimpleAudioInputNode (+连续语音)</component>
+                </layer>
+            </component-architecture>
+        </existing-architecture>
+    </technical-context>
+
+    <!-- ============================================================= -->
+    <!-- 🔗 技术依赖关系 -->
+    <!-- ============================================================= -->
+    <technical-dependencies>
+        <external-dependencies>
+            <dependency name="阿里云ASR API" type="critical" version="v1">
+                <description>语音识别服务，需要方言模型支持</description>
+                <risk>API调用限制和方言模型可用性</risk>
+                <mitigation>精细化API调用配置，备用模型方案</mitigation>
+            </dependency>
+
+            <dependency name="PyAudio" type="required" version="0.2.11+">
+                <description>ALSA音频录制</description>
+                <risk>硬件兼容性问题</risk>
+                <mitigation>设备检测和容错机制</mitigation>
+            </dependency>
+
+            <dependency name="NumPy" type="required" version="1.21+">
+                <description>音频数据处理</description>
+                <risk>性能优化空间</risk>
+                <mitigation>向量化计算优化</mitigation>
+            </dependency>
+
+            <dependency name="requests" type="required" version="2.25+">
+                <description>HTTP API调用</description>
+                <risk>网络延迟和稳定性</risk>
+                <mitigation>重试机制和超时配置</mitigation>
+            </dependency>
+        </external-dependencies>
+
+        <internal-dependencies>
+            <dependency source="CantoneseASROptimizer" target="SimpleAliyunASRService" type="composition">
+                <description>优化器基于基础ASR服务构建</description>
+            </dependency>
+
+            <dependency source="DialectDetector" target="SimpleAliyunASRService" type="parameter">
+                <description>方言检测结果用于ASR参数配置</description>
+            </dependency>
+
+            <dependency source="NoiseDetector" target="SimpleAudioRecorder" type="enhancement">
+                <description>噪声检测增强音频录制</description>
+            </dependency>
+
+            <dependency source="AudioEnhancer" target="AudioConverter" type="preprocessing">
+                <description>音频增强在格式转换前处理</description>
+            </dependency>
+        </internal-dependencies>
+
+        <data-dependencies>
+            <data-flow source="SimpleAudioRecorder" target="NoiseDetector" type="real-time">
+                <format>PCM音频流</format>
+                <volume>16000样本/秒</volume>
+            </data-flow>
+
+            <data-flow source="NoiseDetector" target="AudioEnhancer" type="processed">
+                <format>噪声检测结果 + 音频数据</format>
+                <metadata>噪声级别, 建议增益</metadata>
+            </data-flow>
+
+            <data-flow source="AudioEnhancer" target="DialectDetector" type="optimized">
+                <format>优化后的PCM音频</format>
+                <metadata>音频质量指标</metadata>
+            </data-flow>
+
+            <data-flow source="DialectDetector" target="CantoneseASROptimizer" type="analysis">
+                <format>方言检测结果</format>
+                <metadata>方言类型, 置信度</metadata>
+            </data-flow>
+        </data-dependencies>
+    </technical-dependencies>
+
+    <!-- ============================================================= -->
+    <!-- 🚀 实现策略 -->
+    <!-- ============================================================= -->
+    <implementation-strategy>
+        <development-approach>
+            <methodology>incremental-development</methodology>
+            <brownfield-strategy>extension-based</brownfield-strategy>
+            <testing-strategy>test-driven-enhancement</testing-strategy>
+            <deployment-strategy>phased-rollout</deployment-strategy>
+        </development-approach>
+
+        <implementation-phases>
+            <phase id="phase-1" name="粤语识别优化" duration="1.0 day" priority="high">
+                <tasks>
+                    <task id="1.1" name="ASR服务参数优化" effort="0.5 day">
+                        <description>优化阿里云ASR API粤语识别参数配置</description>
+                        <files>
+                            <file>src/modules/asr/simple_aliyun_asr_service.py (修改)</file>
+                            <file>src/modules/asr/cantonese_asr_optimizer.py (新增)</file>
+                        </files>
+                    </task>
+
+                    <task id="1.2" name="方言变体支持" effort="0.5 day">
+                        <description>实现多种粤语方言模型切换机制</description>
+                        <files>
+                            <file>src/modules/asr/dialect_detector.py (新增)</file>
+                            <file>config/cantonese_optimization.yaml (新增)</file>
+                        </files>
+                    </task>
+                </tasks>
+                <deliverables>
+                    <deliverible>粤语识别准确率提升到90%+</deliverible>
+                    <deliverible>支持广州、香港、澳门主要方言</deliverible>
+                </deliverables>
+            </phase>
+
+            <phase id="phase-2" name="环境适应性优化" duration="0.5 day" priority="medium">
+                <tasks>
+                    <task id="2.1" name="噪声环境处理" effort="0.3 day">
+                        <description>实现环境噪声检测和分类</description>
+                        <files>
+                            <file>src/modules/asr/noise_detector.py (新增)</file>
+                            <file>src/modules/asr/audio_enhancer.py (新增)</file>
+                        </files>
+                    </task>
+
+                    <task id="2.2" name="音频质量提升" effort="0.2 day">
+                        <description>优化音频增益和语音活动检测</description>
+                        <files>
+                            <file>src/modules/asr/simple_audio_recorder.py (修改)</file>
+                            <file>src/modules/asr/audio_processor_asr.py (修改)</file>
+                        </files>
+                    </task>
+                </tasks>
+                <deliverables>
+                    <deliverible>噪声环境下识别准确率保持80%+</deliverible>
+                    <deliverible>音频信噪比显著提升</deliverible>
+                </deliverables>
+            </phase>
+
+            <phase id="phase-3" name="性能优化" duration="0.5 day" priority="medium">
+                <tasks>
+                    <task id="3.1" name="网络和延迟优化" effort="0.3 day">
+                        <description>优化阿里云API调用和重试机制</description>
+                        <files>
+                            <file>src/modules/asr/simple_aliyun_asr_service.py (修改)</file>
+                            <file>src/modules/asr/performance_optimizer.py (新增)</file>
+                        </files>
+                    </task>
+
+                    <task id="3.2" name="连续语音支持" effort="0.2 day">
+                        <description>实现长句语音分段处理</description>
+                        <files>
+                            <file>src/modules/asr/continuous_speech_handler.py (新增)</file>
+                            <file>src/nodes/simple_audio_input_node.py (修改)</file>
+                        </files>
+                    </task>
+                </tasks>
+                <deliverables>
+                    <deliverible>端到端响应时间优化到2秒内</deliverible>
+                    <deliverible>支持连续语音识别</deliverible>
+                </deliverables>
+            </phase>
+
+            <phase id="phase-4" name="测试和验证" duration="0.5 day" priority="high">
+                <tasks>
+                    <task id="4.1" name="多场景测试" effort="0.3 day">
+                        <description>标准环境和噪声环境测试</description>
+                        <files>
+                            <file>src/test_cantonese_asr_optimization.py (新增)</file>
+                            <file>src/test_noise_robustness.py (新增)</file>
+                            <file>src/test_dialect_recognition.py (新增)</file>
+                        </files>
+                    </task>
+
+                    <task id="4.2" name="性能验证" effort="0.2 day">
+                        <description>响应时间和准确率基准测试</description>
+                        <files>
+                            <file>src/test_simple_speech_services.py (修改)</file>
+                        </files>
+                    </task>
+                </tasks>
+                <deliverables>
+                    <deliverible>所有验收标准验证通过</deliverible>
+                    <deliverible>完整的测试报告</deliverible>
+                </deliverables>
+            </phase>
+        </implementation-phases>
+
+        <risk-mitigation>
+            <risk id="risk-1" probability="medium" impact="medium">
+                <description>阿里云ASR API方言支持限制</description>
+                <mitigation>预先测试方言模型可用性，准备备用方案</mitigation>
+                <contingency>降级到标准粤语识别，后续迭代增强</contingency>
+            </risk>
+
+            <risk id="risk-2" probability="low" impact="high">
+                <description>优化算法复杂度超出预期</description>
+                <mitigation>增量式开发，每个阶段验证性能指标</mitigation>
+                <contingency>简化优化算法，优先核心功能</contingency>
+            </risk>
+
+            <risk id="risk-3" probability="medium" impact="low">
+                <description>硬件兼容性问题</description>
+                <mitigation>基于Story 1.1成功硬件配置开发</mitigation>
+                <contingency>调整音频参数，确保基础功能可用</contingency>
+            </risk>
+        </risk-mitigation>
+    </implementation-strategy>
+
+    <!-- ============================================================= -->
+    <!-- 📊 质量保证 -->
+    <!-- ============================================================= -->
+    <quality-assurance>
+        <testing-strategy>
+            <unit-testing coverage="80%">
+                <description>新增功能的单元测试，确保组件可靠性</description>
+            </unit-testing>
+
+            <integration-testing coverage="100%">
+                <description>端到端集成测试，验证完整工作流程</description>
+            </integration-testing>
+
+            <performance-testing coverage="100%">
+                <description>响应时间和准确率性能测试</description>
+            </performance-testing>
+
+            <acceptance-testing coverage="100%">
+                <description>验收标准验证测试</description>
+            </acceptance-testing>
+        </testing-strategy>
+
+        <code-quality-standards>
+            <standard name="代码复用率" target="&gt;75%">
+                <description>基于现有代码的复用和扩展</description>
+            </standard>
+
+            <standard name="代码复杂度" target="&lt;15 cyclomatic">
+                <description>保持代码简洁和可维护性</description>
+            </standard>
+
+            <standard name="测试覆盖率" target="&gt;80%">
+                <description>确保代码质量可靠性</description>
+            </standard>
+
+            <standard name="文档覆盖率" target="&gt;90%">
+                <description>完整的代码文档和API说明</description>
+            </standard>
+        </code-quality-standards>
+
+        <performance-benchmarks>
+            <benchmark name="识别准确率" target="90%+" current="85%">
+                <description>标准环境下的粤语识别准确率</description>
+            </benchmark>
+
+            <benchmark name="响应时间" target="&lt;2s" current="0.243s">
+                <description>端到端语音识别响应时间</description>
+            </benchmark>
+
+            <benchmark name="噪声鲁棒性" target="80%+" current="未测试">
+                <description>40-50dB噪声环境下的识别准确率</description>
+            </benchmark>
+
+            <benchmark name="方言支持" target="3种" current="1种">
+                <description>支持的粤语方言变体数量</description>
+            </benchmark>
+        </performance-benchmarks>
+    </quality-assurance>
+
+    <!-- ============================================================= -->
+    <!-- 📁 文件清单 -->
+    <!-- ============================================================= -->
+    <file-structure>
+        <new-files>
+            <file path="src/modules/asr/cantonese_asr_optimizer.py" lines="~150" priority="high">
+                <description>粤语ASR识别优化器</description>
+            </file>
+
+            <file path="src/modules/asr/dialect_detector.py" lines="~120" priority="high">
+                <description>粤语方言检测器</description>
+            </file>
+
+            <file path="src/modules/asr/noise_detector.py" lines="~100" priority="medium">
+                <description>噪声环境检测器</description>
+            </file>
+
+            <file path="src/modules/asr/audio_enhancer.py" lines="~130" priority="medium">
+                <description>音频质量增强器</description>
+            </file>
+
+            <file path="src/modules/asr/performance_optimizer.py" lines="~80" priority="medium">
+                <description>性能优化器</description>
+            </file>
+
+            <file path="src/modules/asr/continuous_speech_handler.py" lines="~90" priority="medium">
+                <description>连续语音处理器</description>
+            </file>
+
+            <file path="src/test_cantonese_asr_optimization.py" lines="~200" priority="high">
+                <description>粤语ASR优化测试</description>
+            </file>
+
+            <file path="src/test_noise_robustness.py" lines="~150" priority="medium">
+                <description>噪声鲁棒性测试</description>
+            </file>
+
+            <file path="src/test_dialect_recognition.py" lines="~120" priority="medium">
+                <description>方言识别测试</description>
+            </file>
+        </new-files>
+
+        <modified-files>
+            <file path="src/modules/asr/simple_aliyun_asr_service.py" modifications="enhancement" priority="high">
+                <description>增强ASR服务，添加粤语优化和方言支持</description>
+            </file>
+
+            <file path="src/modules/asr/simple_audio_recorder.py" modifications="enhancement" priority="medium">
+                <description>增强录音器，添加噪声检测功能</description>
+            </file>
+
+            <file path="src/modules/asr/audio_processor_asr.py" modifications="enhancement" priority="medium">
+                <description>增强音频处理器，添加质量优化</description>
+            </file>
+
+            <file path="src/nodes/simple_audio_input_node.py" modifications="enhancement" priority="medium">
+                <description>增强ROS2节点，添加连续语音支持</description>
+            </file>
+
+            <file path="src/test_simple_speech_services.py" modifications="enhancement" priority="high">
+                <description>增强测试框架，添加优化功能测试</description>
+            </file>
+
+            <file path="config/aliyun_nls_config.yaml" modifications="enhancement" priority="high">
+                <description>增强配置，添加粤语优化参数</description>
+            </file>
+        </modified-files>
+    </file-structure>
+
+    <!-- ============================================================= -->
+    <!-- 📈 成功标准 -->
+    <!-- ============================================================= -->
+    <success-criteria>
+        <functional-criteria>
+            <criterion id="SC-1" mandatory="true">
+                <description>粤语识别准确率从85%提升到90%+</description>
+                <measurement>ASR准确率测试</measurement>
+                <target>90%</target>
+                <baseline>85%</baseline>
+            </criterion>
+
+            <criterion id="SC-2" mandatory="true">
+                <description>支持广州、香港、澳门主要方言变体</description>
+                <measurement>方言识别测试</measurement>
+                <target>3种方言</target>
+                <baseline>1种方言</baseline>
+            </criterion>
+
+            <criterion id="SC-3" mandatory="false">
+                <description>噪声环境下识别准确率保持80%+</description>
+                <measurement>噪声鲁棒性测试</measurement>
+                <target>80%</target>
+                <baseline>未测试</baseline>
+            </criterion>
+        </functional-criteria>
+
+        <performance-criteria>
+            <criterion id="SC-4" mandatory="true">
+                <description>端到端响应时间优化到2秒内</description>
+                <measurement>响应时间测试</measurement>
+                <target>&lt;2秒</target>
+                <baseline>0.243秒</baseline>
+            </criterion>
+
+            <criterion id="SC-5" mandatory="false">
+                <description>连续语音识别功能正常工作</description>
+                <measurement>连续语音测试</measurement>
+                <target>功能可用</target>
+                <baseline>不支持</baseline>
+            </criterion>
+        </performance-criteria>
+
+        <quality-criteria>
+            <criterion id="SC-6" mandatory="true">
+                <description>代码复用率保持在75%以上</description>
+                <measurement>代码分析</measurement>
+                <target>&gt;75%</target>
+                <baseline>100% (基础功能)</baseline>
+            </criterion>
+
+            <criterion id="SC-7" mandatory="true">
+                <description>所有验收标准验证通过</description>
+                <measurement>验收测试</measurement>
+                <target>100%通过</target>
+                <baseline>待测试</baseline>
+            </criterion>
+        </quality-criteria>
+
+        <business-criteria>
+            <criterion id="SC-8" mandatory="false">
+                <description>用户满意度提升10%+</description>
+                <measurement>用户反馈调研</measurement>
+                <target>10%+</target>
+                <baseline>待调研</baseline>
+            </criterion>
+
+            <criterion id="SC-9" mandatory="true">
+                <description>为后续离线服务需求收集优化经验</description>
+                <measurement>经验总结文档</measurement>
+                <target>完整经验库</target>
+                <baseline>基础经验</baseline>
+            </criterion>
+        </business-criteria>
+    </success-criteria>
+
+    <!-- ============================================================= -->
+    <!-- 🚫 风险评估 -->
+    <!-- ============================================================= -->
+    <risk-assessment>
+        <technical-risks>
+            <risk id="TR-1" category="api-limitation" probability="medium" impact="medium">
+                <description>阿里云ASR API方言支持的调用限制</description>
+                <consequence>方言识别功能受限，影响验收标准AC-2</consequence>
+                <mitigation>精细化API调用配置，最大化利用云端能力</mitigation>
+                <owner>Developer Agent</owner>
+                <monitoring>API调用成功率和方言模型可用性</monitoring>
+            </risk>
+
+            <risk id="TR-2" category="optimization-complexity" probability="medium" impact="high">
+                <description>在纯在线约束下实现有效优化的挑战</description>
+                <consequence>优化效果不达预期，影响验收标准AC-1, AC-3</consequence>
+                <mitigation>基于Story 1.1成功经验进行渐进式改进</mitigation>
+                <owner>Developer Agent</owner>
+                <monitoring>每个优化阶段的性能指标提升</monitoring>
+            </risk>
+
+            <risk id="TR-3" category="performance-balance" probability="medium" impact="medium">
+                <description>准确率提升与延迟优化的平衡</description>
+                <consequence>响应时间不满足验收标准AC-4要求</consequence>
+                <mitigation>实时监控准确率和延迟的平衡点</mitigation>
+                <owner>Developer Agent</owner>
+                <monitoring>端到端响应时间和识别准确率的平衡</monitoring>
+            </risk>
+        </technical-risks>
+
+        <project-risks>
+            <risk id="PR-1" category="schedule" probability="low" impact="medium">
+                <description>开发时间超出2.5天预期</description>
+                <consequence>项目进度延迟，影响后续迭代</consequence>
+                <mitigation>严格的增量开发和阶段性验证</mitigation>
+                <owner>Scrum Master</owner>
+                <monitoring>每日开发进度跟踪</monitoring>
+            </risk>
+
+            <risk id="PR-2" category="integration" probability="low" impact="high">
+                <description>新功能与现有系统集成出现问题</description>
+                <consequence>系统稳定性下降，影响基础功能</consequence>
+                <mitigation>严格的向后兼容性测试</mitigation>
+                <owner>Developer Agent</owner>
+                <monitoring>集成测试通过率和系统稳定性</monitoring>
+            </risk>
+        </project-risks>
+    </risk-assessment>
+
+    <!-- ============================================================= -->
+    <!-- 📚 参考资料和依赖 -->
+    <!-- ============================================================= -->
+    <references>
+        <technical-documents>
+            <doc id="ref-1" title="阿里云ASR API粤语支持文档" url="https://help.aliyun.com/document_detail/151981.html" type="api-documentation"/>
+            <doc id="ref-2" title="Story 1.1完成报告" file="docs/stories/1-1-simple-online-speech-services.md" type="internal-document"/>
+            <doc id="ref-3" title="纯在线服务架构文档" file="docs/architecture-design-simple-online-services.md" type="internal-document"/>
+            <doc id="ref-4" title="纯在线服务测试策略" file="docs/testing-strategy-simple-online-services.md" type="internal-document"/>
+        </technical-documents>
+
+        <existing-artifacts>
+            <artifact id="ea-1" name="SimpleAliyunASRService" file="src/modules/asr/simple_aliyun_asr_service.py"/>
+            <artifact id="ea-2" name="SimpleAudioRecorder" file="src/modules/asr/simple_audio_recorder.py"/>
+            <artifact id="ea-3" name="AudioConverter" file="src/modules/asr/audio_converter.py"/>
+            <artifact id="ea-4" name="SimpleAudioInputNode" file="src/nodes/simple_audio_input_node.py"/>
+            <artifact id="ea-5" name="AliyunNLSConfig" file="config/aliyun_nls_config.yaml"/>
+        </existing-artifacts>
+    </references>
+
+    <!-- ============================================================= -->
+    <!-- 📊 与迭代1战略的契合度 -->
+    <!-- ============================================================= -->
+    <strategic-alignment>
+        <iteration-strategy>
+            <iteration-id>1</iteration-id>
+            <iteration-name>纯在线服务 (3-4周)</iteration-name>
+            <iteration-goal>基于纯在线架构实现稳定可用的语音服务</iteration-goal>
+        </iteration-strategy>
+
+        <story-alignment>
+            <contribution>质量优化 - 基于Story 1.1基础进行识别准确率和适应性优化</contribution>
+            <dependencies>强依赖Story 1.1的成功基础和架构设计</dependencies>
+            <enablers>为后续Stories提供优化经验和改进方向</enablers>
+            <constraints>严格遵守纯在线架构原则，不引入本地处理</constraints>
+        </story-alignment>
+
+        <evolution-path>
+            <step id="evolution-1" story="1.1" status="completed">基础可用性实现</step>
+            <step id="evolution-2" story="1.2" status="current">质量优化提升</step>
+            <step id="evolution-3" story="future" status="planned">功能扩展增强</step>
+            <step id="evolution-4" story="future" status="planned">离线服务支持</step>
+        </evolution-path>
+    </strategic-alignment>
+
+    <!-- ============================================================= -->
+    <!-- 📝 变更记录 -->
+    <!-- ============================================================= -->
+    <change-log>
+        <change version="1.0" date="2025-11-09" author="Scrum Master">
+            <description>基于Story 1.1经验创建粤语ASR优化Story-context文档</description>
+            <impact>完成Brownfield Level 4企业级标准对齐</impact>
+        </change>
+    </change-log>
+
+    <!-- ============================================================= -->
+    <!-- ✅ 文档完整性检查 -->
+    <!-- ============================================================= -->
+    <document-validation>
+        <validation-item id="val-1" status="passed">用户故事完整</validation-item>
+        <validation-item id="val-2" status="passed">验收标准明确</validation-item>
+        <validation-item id="val-3" status="passed">现有代码分析完成</validation-item>
+        <validation-item id="val-4" status="passed">复用组件识别完成</validation-item>
+        <validation-item id="val-5" status="passed">扩展点定义清晰</validation-item>
+        <validation-item id="val-6" status="passed">技术上下文完整</validation-item>
+        <validation-item id="val-7" status="passed">依赖关系明确</validation-item>
+        <validation-item id="val-8" status="passed">实现策略可行</validation-item>
+        <validation-item id="val-9" status="passed">风险评估全面</validation-item>
+        <validation-item id="val-10" status="passed">成功标准可测量</validation-item>
+    </document-validation>
+
+    <!-- ============================================================= -->
+    <!-- 🎯 文档总结 -->
+    <!-- ============================================================= -->
+    <executive-summary>
+        <objective>基于Story 1.1的成功基础，实现粤语ASR识别能力的显著优化</objective>
+        <approach>Brownfield Level 4增量开发，严格复用现有组件，专注质量提升</approach>
+        <key-benefits>
+            <benefit>识别准确率从85%提升到90%+</benefit>
+            <benefit>支持多种粤语方言变体</benefit>
+            <benefit>噪声环境适应性增强</benefit>
+            <benefit>响应时间进一步优化</benefit>
+        </key-benefits>
+        <expected-outcome>
+            <functional>验收标准全部通过，用户满意度显著提升</functional>
+            <technical>纯在线架构优化经验，为后续迭代奠定基础</technical>
+            <business>增强粤语地区产品竞争力，验证优化策略有效性</business>
+        </expected-outcome>
+    </executive-summary>
+</story-context>

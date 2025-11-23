@@ -1,0 +1,501 @@
+# XleRobot CI/CD Pipeline
+# BMad-Method v6 Brownfield Level 4
+# 自动化构建、测试、部署流水线
+
+name: XleRobot CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      deployment_strategy:
+        description: 'Deployment strategy'
+        required: true
+        default: 'rolling_update'
+        type: choice
+        options:
+        - blue_green
+        - rolling_update
+        - canary
+      run_tests:
+        description: 'Run full test suite'
+        required: false
+        default: true
+        type: boolean
+      skip_build:
+        description: 'Skip build and use existing image'
+        required: false
+        default: false
+        type: boolean
+
+# 全局环境变量
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  # 代码质量检查
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    outputs:
+      quality-score: ${{ steps.quality.outputs.score }}
+      tests-passed: ${{ steps.tests.outputs.passed }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Lint with flake8
+      id: lint
+      run: |
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        echo "lint-status=success" >> $GITHUB_OUTPUT
+
+    - name: Type checking with mypy
+      id: typecheck
+      run: |
+        mypy src/ --ignore-missing-imports
+        echo "typecheck-status=success" >> $GITHUB_OUTPUT
+
+    - name: Security scan with bandit
+      id: security
+      run: |
+        bandit -r src/ -f json -o bandit-report.json
+        echo "security-status=success" >> $GITHUB_OUTPUT
+
+    - name: Upload security report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: bandit-report.json
+
+    - name: Run unit tests
+      id: tests
+      run: |
+        python -m pytest tests/unit/ -v --cov=src --cov-report=xml --cov-report=html --junitxml=test-results.xml
+        echo "passed=true" >> $GITHUB_OUTPUT
+
+    - name: Upload test coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: test-results.xml
+
+    - name: Calculate quality score
+      id: quality
+      run: |
+        # 简化的质量评分算法
+        score=100
+
+        # 检查代码覆盖率
+        if [ -f coverage.xml ]; then
+          coverage=$(grep 'line-rate' coverage.xml | cut -d'"' -f4 | head -1)
+          coverage_int=$(echo "$coverage * 100" | bc)
+          if (( $(echo "$coverage_int < 80" | bc -l) )); then
+            score=$((score - 20))
+          fi
+        fi
+
+        echo "score=$score" >> $GITHUB_OUTPUT
+        echo "Quality Score: $score"
+
+  # 构建Docker镜像
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: needs.code-quality.outputs.tests-passed == 'true' || github.event_name == 'workflow_dispatch'
+    outputs:
+      base-image: ${{ steps.meta-base.outputs.tags }}
+      asr-image: ${{ steps.meta-asr.outputs.tags }}
+      tts-image: ${{ steps.meta-tts.outputs.tags }}
+      llm-image: ${{ steps.meta-llm.outputs.tags }}
+      multimodal-image: ${{ steps.meta-multimodal.outputs.tags }}
+      monitoring-image: ${{ steps.meta-monitoring.outputs.tags }}
+      gateway-image: ${{ steps.meta-gateway.outputs.tags }}
+
+    strategy:
+      matrix:
+        service: [base, asr, tts, llm, multimodal, monitoring, gateway]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta-${{ matrix.service }}
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+        labels: |
+          org.opencontainers.image.title=XleRobot ${{ matrix.service }}
+          org.opencontainers.image.description=XleRobot ${{ matrix.service }} service
+          org.opencontainers.image.version=${{ github.ref_name }}
+          org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.licenses=MIT
+
+    - name: Build and push Docker image
+      id: build-${{ matrix.service }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: deployment/docker/Dockerfile.${{ matrix.service }}
+        target: production
+        push: true
+        tags: ${{ steps.meta-${{ matrix.service }} }.outputs.tags }}
+        labels: ${{ steps.meta-${{ matrix.service }} }.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ steps.meta-${{ matrix.service }} }.outputs.tags }}
+        format: spdx-json
+        output-file: sbom-${{ matrix.service }}.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v3
+      with:
+        name: sbom-${{ matrix.service }}
+        path: sbom-${{ matrix.service }}.json
+
+  # 集成测试
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event.inputs.run_tests != 'false' || github.event_name != 'workflow_dispatch'
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Compose
+      run: |
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+
+    - name: Create test environment
+      run: |
+        cp deployment/docker/docker-compose.yml docker-compose.test.yml
+        # 修改配置用于测试环境
+        sed -i 's/production/testing/g' docker-compose.test.yml
+        sed -i 's/"replicas": [0-9]/"replicas": 1/g' docker-compose.test.yml
+
+    - name: Start test environment
+      run: |
+        docker-compose -f docker-compose.test.yml up -d
+        sleep 60  # 等待服务启动
+
+    - name: Run health checks
+      run: |
+        for service in asr tts llm multimodal monitoring gateway; do
+          echo "Checking $service health..."
+          timeout 300 bash -c "until curl -f http://localhost:800$(echo $service | wc -c)/health; do sleep 5; done"
+        done
+
+    - name: Run integration tests
+      run: |
+        python -m pytest tests/integration/ -v --tb=short
+
+    - name: Run performance tests
+      run: |
+        python -m pytest tests/performance/ -v --tb=short
+
+    - name: Generate test report
+      run: |
+        python scripts/generate_test_report.py > test-report.json
+
+    - name: Upload test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-report
+        path: test-report.json
+
+    - name: Cleanup test environment
+      if: always()
+      run: |
+        docker-compose -f docker-compose.test.yml down -v
+        docker system prune -f
+
+  # 预部署验证 (Staging)
+  pre-deploy-staging:
+    name: Pre-deploy Validation (Staging)
+    runs-on: ubuntu-latest
+    needs: [code-quality, build-images, integration-tests]
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      uses: azure/k8s-set-context@v3
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+    - name: Deploy to staging
+      run: |
+        # 创建命名空间
+        kubectl create namespace xlerobot-staging --dry-run=client -o yaml | kubectl apply -f -
+
+        # 应用配置
+        kubectl apply -f deployment/k8s/staging/ -n xlerobot-staging
+
+        # 等待部署完成
+        kubectl rollout status deployment/xlerobot-asr -n xlerobot-staging --timeout=600s
+        kubectl rollout status deployment/xlerobot-tts -n xlerobot-staging --timeout=600s
+        kubectl rollout status deployment/xlerobot-llm -n xlerobot-staging --timeout=600s
+        kubectl rollout status deployment/xlerobot-multimodal -n xlerobot-staging --timeout=600s
+
+    - name: Run smoke tests
+      run: |
+        # 等待服务就绪
+        sleep 120
+
+        # 执行烟雾测试
+        ./scripts/smoke_tests.sh --environment=staging
+
+    - name: Validate monitoring
+      run: |
+        ./scripts/validate_monitoring.sh --environment=staging
+
+    - name: Security scan running services
+      run: |
+        ./scripts/security_scan.sh --environment=staging
+
+  # 生产部署
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [code-quality, build-images, integration-tests, pre-deploy-staging]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      uses: azure/k8s-set-context@v3
+      with:
+        method: kubeconfig
+        kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+
+    - name: Create backup
+      run: |
+        ./scripts/create_backup.sh --environment=production
+
+    - name: Deploy based on strategy
+      run: |
+        strategy="${{ github.event.inputs.deployment_strategy }}"
+        image_tag="${{ needs.build-images.outputs.multimodal-image }}"
+
+        case "$strategy" in
+          "blue_green")
+            ./scripts/blue_green_deploy.sh --image-tag="$image_tag" --environment=production
+            ;;
+          "rolling_update")
+            ./scripts/rolling_update_deploy.sh --image-tag="$image_tag" --environment=production
+            ;;
+          "canary")
+            ./scripts/canary_deploy.sh --image-tag="$image_tag" --environment=production
+            ;;
+          *)
+            echo "Unknown deployment strategy: $strategy"
+            exit 1
+            ;;
+        esac
+
+    - name: Post-deployment validation
+      run: |
+        ./scripts/post_deployment_validation.sh --environment=production
+
+    - name: Run full health check
+      run: |
+        ./scripts/full_health_check.sh --environment=production
+
+    - name: Update deployment status
+      uses: chrnorm/deployment-status@v2
+      with:
+        token: '${{ github.token }}'
+        environment-url: https://xlerobot.com
+        environment: production
+        status: ${{ job.status }}
+
+  # 部署后测试
+  post-deploy-tests:
+    name: Post-deployment Tests
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: always() && needs.deploy-production.result == 'success'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run user acceptance tests
+      run: |
+        ./scripts/user_acceptance_tests.sh --environment=production
+
+    - name: Run load tests
+      run: |
+        ./scripts/load_tests.sh --environment=production --duration=300
+
+    - name: Generate deployment report
+      run: |
+        ./scripts/generate_deployment_report.sh > deployment-report.json
+
+    - name: Upload deployment report
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-report
+        path: deployment-report.json
+
+    - name: Notify team
+      if: success()
+      run: |
+        curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
+          -H 'Content-type: application/json' \
+          --data '{"text":"✅ XleRobot deployed successfully to production!"}'
+
+    - name: Notify team on failure
+      if: failure()
+      run: |
+        curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
+          -H 'Content-type: application/json' \
+          --data '{"text":"❌ XleRobot deployment failed! Please check the logs."}'
+
+  # 清理和报告
+  cleanup-and-report:
+    name: Cleanup and Report
+    runs-on: ubuntu-latest
+    needs: [code-quality, build-images, integration-tests, deploy-production, post-deploy-tests]
+    if: always()
+
+    steps:
+    - name: Generate pipeline report
+      run: |
+        cat << EOF > pipeline-report.json
+        {
+          "pipeline": {
+            "run_id": "${{ github.run_id }}",
+            "repository": "${{ github.repository }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          },
+          "stages": {
+            "code_quality": {
+              "status": "${{ needs.code-quality.result }}",
+              "quality_score": "${{ needs.code-quality.outputs.quality-score }}"
+            },
+            "build": {
+              "status": "${{ needs.build-images.result }}"
+            },
+            "integration_tests": {
+              "status": "${{ needs.integration-tests.result }}"
+            },
+            "deployment": {
+              "status": "${{ needs.deploy-production.result }}"
+            },
+            "post_deploy_tests": {
+              "status": "${{ needs.post-deploy-tests.result }}"
+            }
+          },
+          "summary": {
+            "overall_status": "${{ job.status }}",
+            "duration": "${{ github.event.created_at }}",
+            "triggered_by": "${{ github.actor }}"
+          }
+        }
+        EOF
+
+    - name: Upload pipeline report
+      uses: actions/upload-artifact@v3
+      with:
+        name: pipeline-report
+        path: pipeline-report.json
+
+    - name: Cleanup Docker resources
+      run: |
+        docker system prune -af
+        docker volume prune -f
+
+    - name: Update deployment metrics
+      run: |
+        # 发送部署指标到监控系统
+        curl -X POST "https://metrics.xlerobot.com/deployment" \
+          -H "Content-Type: application/json" \
+          -d @pipeline-report.json

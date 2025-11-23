@@ -1,0 +1,95 @@
+# Python运行时
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env/
+.venv/
+
+# 环境配置（敏感信息）
+.env
+*.env.local
+*.env.production
+.env.secret
+config/.env*
+*.env.sprint*
+
+# 测试临时文件
+*.wav
+*.flac
+test_recording*.wav
+*_test_audio.wav
+testing_data/
+demos/
+
+# 日志文件
+*.log
+logs/
+*.json
+log/
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ROS2编译产物
+build/
+install/
+log/
+
+# 临时文件
+*.tmp
+*.bak
+*_backup.*
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Linux
+*~
+
+# 备份文件
+*.orig
+*.rej
+
+# 性能分析文件
+*.prof
+*.profile
+
+# 覆盖率报告
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+
+# pytest
+.pytest_cache/
+.cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# 其他临时文件
+*.temp
+*.new
+*.old
+*.unused

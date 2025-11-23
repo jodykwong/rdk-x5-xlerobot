@@ -1,0 +1,79 @@
+# XleRobot 基础镜像
+# BMad-Method v6 Brownfield Level 4
+# Python 3.10 基础环境
+
+FROM python:3.10-slim
+
+# 设置标签
+LABEL maintainer="XleRobot Team"
+LABEL version="1.8.0"
+LABEL description="XleRobot Base Image"
+
+# 设置环境变量
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# 设置工作目录
+WORKDIR /opt/xlerobot
+
+# 创建用户
+RUN groupadd -r xlerobot && \
+    useradd -r -g xlerobot -d /opt/xlerobot -s /bin/bash xlerobot
+
+# 安装系统依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # 基础工具
+        curl \
+        wget \
+        git \
+        vim \
+        htop \
+        procps \
+        # 音频处理依赖
+        alsa-utils \
+        libasound2-dev \
+        portaudio19-dev \
+        # 系统监控
+        sysstat \
+        iotop \
+        # 网络工具
+        netcat-openbsd \
+        dnsutils \
+        # 安全工具
+        ca-certificates \
+        && rm -rf /var/lib/apt/lists/*
+
+# 升级pip
+RUN pip install --upgrade pip setuptools wheel
+
+# 安装Python基础依赖
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
+
+# 创建必要的目录
+RUN mkdir -p /opt/xlerobot/{src,config,data,logs,monitoring} && \
+    mkdir -p /var/log/xlerobot && \
+    chown -R xlerobot:xlerobot /opt/xlerobot /var/log/xlerobot
+
+# 复制基础脚本
+COPY docker/scripts/ /opt/xlerobot/scripts/
+RUN chmod +x /opt/xlerobot/scripts/*.sh && \
+    chown -R xlerobot:xlerobot /opt/xlerobot/scripts
+
+# 设置健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# 切换到非root用户
+USER xlerobot
+
+# 设置默认命令
+CMD ["/bin/bash"]
+
+# 暴露端口
+EXPOSE 8000 9090

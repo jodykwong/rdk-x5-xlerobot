@@ -1,0 +1,183 @@
+# XleRobot 开发环境配置
+# BMad-Method v6 Brownfield Level 4
+
+# 环境标识
+environment:
+  name: "development"
+  type: "development"
+  region: "local"
+  availability_zones: ["local"]
+
+# 系统配置覆盖
+system:
+  replicas:
+    asr: 1
+    tts: 1
+    llm: 1
+    multimodal: 1
+    monitoring: 1
+    gateway: 1
+
+# 服务资源缩减
+services:
+  asr:
+    replicas: 1
+    resources:
+      cpu: "200m"
+      memory: "512Mi"
+      npu: "0"  # 开发环境不使用NPU
+    debug:
+      enabled: true
+      port: 8006
+      log_level: "DEBUG"
+
+  tts:
+    replicas: 1
+    resources:
+      cpu: "200m"
+      memory: "256Mi"
+    debug:
+      enabled: true
+      port: 8007
+      log_level: "DEBUG"
+
+  llm:
+    replicas: 1
+    resources:
+      cpu: "500m"
+      memory: "1Gi"
+    debug:
+      enabled: true
+      port: 8008
+      log_level: "DEBUG"
+
+  multimodal:
+    replicas: 1
+    resources:
+      cpu: "400m"
+      memory: "768Mi"
+      bpu: "0"  # 开发环境不使用BPU
+    debug:
+      enabled: true
+      port: 8009
+      log_level: "DEBUG"
+
+  monitoring:
+    replicas: 1
+    resources:
+      cpu: "100m"
+      memory: "128Mi"
+
+  gateway:
+    replicas: 1
+    resources:
+      cpu: "100m"
+      memory: "256Mi"
+
+# 网络配置
+networking:
+  load_balancer:
+    type: "internal"
+    ssl_termination: false
+  dns:
+    domain: "xlerobot.local"
+    subdomains:
+      api: "api.xlerobot.local"
+      monitoring: "monitoring.xlerobot.local"
+
+# 存储配置
+storage:
+  production_class: "local"
+  backup_class: "local"
+  backup_schedule: "0 4 * * *"  # 每天凌晨4点备份
+  encryption:
+    enabled: false
+
+# 数据库配置
+database:
+  host: "localhost"
+  port: 5432
+  name: "xlerobot_dev"
+  ssl_mode: "disable"
+  connection_pool:
+    max_connections: 10
+    min_connections: 1
+
+# 缓存配置
+cache:
+  redis:
+    host: "localhost"
+    port: 6379
+    cluster_enabled: false
+    sentinel_enabled: false
+    memory_limit: "512Mi"
+    eviction_policy: "allkeys-lru"
+
+# 监控配置简化
+monitoring:
+  prometheus:
+    retention: "7d"
+    storage_size: "10Gi"
+    remote_write:
+      enabled: false
+  grafana:
+    admin_user: "admin"
+    admin_password: "admin"
+    external_access: false
+    smtp:
+      enabled: false
+  alertmanager:
+    enabled: false
+
+# 日志配置
+logging:
+  level: "DEBUG"
+  aggregation:
+    enabled: false
+  audit:
+    enabled: false
+
+# 安全配置简化
+security:
+  tls:
+    enabled: false
+  authentication:
+    session_timeout: 86400
+    max_login_attempts: 10
+    lockout_duration: 60
+  authorization:
+    rbac_enabled: false
+  network_policies:
+    enabled: false
+
+# 性能配置简化
+performance:
+  cache:
+    redis_cluster: false
+  rate_limiting:
+    enabled: false
+  circuit_breaker:
+    enabled: false
+
+# 备份和恢复
+backup:
+  enabled: false
+
+# 灾难恢复
+disaster_recovery:
+  enabled: false
+
+# 开发特定配置
+development:
+  hot_reload: true
+  debug_mode: true
+  mock_services:
+    aliyun_asr: true
+    aliyun_tts: true
+    external_llm: true
+  testing_data:
+    enabled: true
+    path: "/data/testing"
+  profiling:
+    enabled: true
+    output_path: "/var/log/xlerobot/profiling"

@@ -1,0 +1,35 @@
+# XleRobot IMX219 Camera Configuration
+# D-Robotics RDK X5
+
+# Basic camera parameters
+camera_id: 0
+camera_name: "imx219"
+frame_id: "camera_link"
+
+# Image settings
+image_width: 1920
+image_height: 1080
+fps: 30
+pixel_format: "rgb8"  # Options: rgb8, bgr8, yuyv, gray
+
+# Publishing options
+publish_raw: true
+publish_compressed: true
+jpeg_quality: 85
+
+# Camera control parameters
+auto_exposure: true
+brightness: 50
+contrast: 50
+
+# ROS2 settings
+queue_size: 10
+reliability: "reliable"  # Options: reliable, best_effort
+
+# Performance settings
+buffer_size: 3
+timeout_ms: 100
+
+# Debug options
+enable_debug: false
+log_level: "INFO"  # Options: DEBUG, INFO, WARN, ERROR

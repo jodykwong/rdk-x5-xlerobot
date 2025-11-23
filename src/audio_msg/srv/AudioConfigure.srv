@@ -1,0 +1,11 @@
+# 请求
+uint32 sample_rate          # 采样率
+uint32 channels             # 通道数
+uint32 chunk_size           # 块大小
+string format              # 格式
+bool enable_preprocessing   # 启用预处理
+bool enable_wake_word       # 启用唤醒词检测
+---
+# 响应
+bool success                 # 是否成功
+string message               # 消息

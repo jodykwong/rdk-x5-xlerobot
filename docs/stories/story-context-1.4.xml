@@ -1,0 +1,254 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>基础语音合成 (阿里云TTS API集成)</title>
+    <status>Ready</status>
+    <generatedAt>2025-11-10</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-4-basic-voice-synthesis.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>粤语用户</asA>
+    <iWant>机器人能够用自然的粤语语音回应我</iWant>
+    <soThat>我可以获得更亲切和自然的交互体验</soThat>
+    <tasks>5个主要任务：阿里云TTS API集成、ROS2节点开发、语音质量控制、系统集成测试、文档和部署</tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-001: 粤语语音合成功能 - 支持阿里云TTS API粤语jiajia发音人，WAV格式输出
+    AC-002: 语音质量要求 - 清晰度>95%，自然度>4.0/5.0，基础情感语音支持
+    AC-003: 性能要求 - 响应时间<1秒，实时合成，CPU<20%，内存<256MB
+    AC-004: 语音控制功能 - 语速(0.8x-1.2x)、音调(±20%)、音量(50%-150%)调节
+    AC-005: 系统集成 - ROS2音频架构集成，/tts/audio话题接口，与ASR系统协同
+    AC-006: 可靠性要求 - 网络异常处理，API重试(最多3次)，服务可用性>95%
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture-design-simple-online-services.md</path>
+        <title>纯在线服务技术架构设计文档</title>
+        <section>云端服务层</section>
+        <snippet>语音合成服务: 阿里云TTS API, 发音人: 粤语女声 (jiajia), 格式: WAV 16kHz, 超时: 3秒</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd-simple-online-services.md</path>
+        <title>纯在线服务产品需求文档</title>
+        <section>基础语音合成功能</section>
+        <snippet>功能描述: 系统将文本转换为语音，使用粤语女声，输出可理解的语音回复。验收标准: 粤语语音合成正常，语音清晰度>4.0/5.0，合成延迟<2秒</snippet>
+      </doc>
+      <doc>
+        <path>docs/aliyun-api-integration-guide.md</path>
+        <title>阿里云API集成指南</title>
+        <section>TTS API集成</section>
+        <snippet>阿里云语音合成API支持多种发音人和语言，粤语jiajia发音人提供自然的女声输出，支持SSML标记进行语音控制</snippet>
+      </doc>
+      <doc>
+        <path>docs/testing-strategy-simple-online-services.md</path>
+        <title>纯在线服务测试策略</title>
+        <section>TTS服务测试</section>
+        <snippet>TTS功能测试包括语音质量评估、响应时间测试、参数调节验证和错误处理测试</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <code>
+        <path>src/modules/asr/aliyun_asr_client.py</path>
+        <kind>service</kind>
+        <symbol>AliyunASRClient</symbol>
+        <lines>1-150</lines>
+        <reason>阿里云API认证和连接机制可复用，包含Token管理和WebSocket连接逻辑</reason>
+      </code>
+      <code>
+        <path>src/modules/tts/engine/aliyun_tts_client.py</path>
+        <kind>service</kind>
+        <symbol>AliyunTTSClient</symbol>
+        <lines>1-200</lines>
+        <reason>现有阿里云TTS客户端实现，包含粤语jiajia发音人支持和参数控制</reason>
+      </code>
+      <code>
+        <path>src/xlerobot_phase1/xlerobot_phase1/services/aliyun_tts_client.py</path>
+        <kind>service</kind>
+        <symbol>AliyunTTSClient</symbol>
+        <lines>1-180</lines>
+        <reason>Phase 1的TTS客户端实现，可作为Story 1.4的参考基础</reason>
+      </code>
+      <code>
+        <path>src/xlerobot_phase1/xlerobot_phase1/nodes/real_audio_player.py</path>
+        <kind>component</kind>
+        <symbol>RealAudioPlayer</symbol>
+        <lines>1-120</lines>
+        <reason>ALSA音频播放实现，支持WAV格式播放和音频流控制</reason>
+      </code>
+      <code>
+        <path>src/nodes/asr_service_node.py</path>
+        <kind>component</kind>
+        <symbol>ASRServiceNode</symbol>
+        <lines>1-100</lines>
+        <reason>ROS2音频服务节点架构模式，可用于TTSServiceNode设计参考</reason>
+      </code>
+      <code>
+        <path>src/modules/tts/config/aliyun_config.yaml</path>
+        <kind>config</kind>
+        <symbol>AliyunTTSConfig</symbol>
+        <lines>1-50</lines>
+        <reason>阿里云TTS配置模板，包含API密钥、发音人、音频参数设置</reason>
+      </code>
+    </code>
+
+    <dependencies>
+      <python>
+        <package>requests</package>
+        <version>>=2.25.0</version>
+      </python>
+      <python>
+        <package>rclpy</package>
+        <version>>=3.3.0</version>
+      </python>
+      <python>
+        <package>numpy</package>
+        <version>>=1.21.0</version>
+      </python>
+      <python>
+        <package>pyaudio</package>
+        <version>>=0.2.11</version>
+      </python>
+      <python>
+        <package>websocket-client</package>
+        <version>>=1.0.0</version>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>
+      <name>纯在线服务架构</name>
+      <description>100%依赖阿里云TTS API，无本地TTS模型，禁止本地语音合成引擎</description>
+    </constraint>
+    <constraint>
+      <name>代码复杂度控制</name>
+      <description>总代码量&lt;800行，保持简洁，避免过度工程化</description>
+    </constraint>
+    <constraint>
+      <name>技术边界</name>
+      <description>严格禁止本地TTS引擎、复杂音频处理、语音合成模型训练、深度学习框架</description>
+    </constraint>
+    <constraint>
+      <name>API集成规范</name>
+      <description>基于现有阿里云API认证和连接模式，复用Story 1.3的Token认证逻辑</description>
+    </constraint>
+    <constraint>
+      <name>ROS2架构遵循</name>
+      <description>复用现有音频节点结构和消息接口，使用标准的话题/服务模式</description>
+    </constraint>
+    <constraint>
+      <name>音频格式标准</name>
+      <description>输出格式：WAV 16kHz, 16-bit, mono，与ASR系统格式保持一致</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>TTSService</name>
+      <kind>ROS2 Service</kind>
+      <signature>
+        service: audio_msg/TextToSpeech
+        request:
+          text: string
+          voice: string (default: "jiajia")
+          rate: float32 (default: 1.0)
+          pitch: float32 (default: 1.0)
+          volume: float32 (default: 1.0)
+        response:
+          success: bool
+          audio_data: uint8[]
+          duration: float32
+          message: string
+      </signature>
+      <path>src/xlerobot/srv/TextToSpeech.srv</path>
+    </interface>
+    <interface>
+      <name>TTS Audio Topic</name>
+      <kind>ROS2 Topic</kind>
+      <signature>
+        topic: /tts/audio
+        msg: audio_msg/AudioData
+        fields:
+          data: uint8[]
+          format: string
+          sample_rate: uint32
+          channels: uint8
+          timestamp: time
+      </signature>
+      <path>src/xlerobot/msg/AudioData.msg</path>
+    </interface>
+    <interface>
+      <name>TTS Status Topic</name>
+      <kind>ROS2 Topic</kind>
+      <signature>
+        topic: /tts/status
+        msg: audio_msg/TTSStatus
+        fields:
+          status: string (idle/processing/completed/error)
+          text_hash: string
+          duration: float32
+          error_code: uint32
+          timestamp: time
+      </signature>
+      <path>src/xlerobot/msg/TTSStatus.msg</path>
+    </interface>
+    <interface>
+      <name>Aliyun TTS API</name>
+      <kind>HTTP/WebSocket API</kind>
+      <signature>
+        endpoint: https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/tts
+        method: POST/WebSocket
+        headers:
+          Authorization: Bearer {token}
+          Content-Type: application/json
+        body:
+          appkey: string
+          token: string
+          text: string
+          voice: string (jiajia)
+          format: string (wav)
+          sample_rate: int (16000)
+          rate: float (0.8-1.2)
+          pitch: float (0.8-1.2)
+          volume: float (0.5-1.5)
+      </signature>
+      <path>src/modules/tts/engine/aliyun_tts_client.py</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      单元测试使用pytest框架，覆盖核心API调用和音频处理逻辑。集成测试使用ROS2测试框架，验证节点间通信和数据流。性能测试验证响应时间<1秒和资源占用约束。用户验收测试端到端语音交互体验。所有测试必须在真实硬件环境中验证，禁止Mock数据。
+    </standards>
+    <locations>
+      <location>tests/unit/test_tts_service.py</location>
+      <location>tests/unit/test_aliyun_tts_client.py</location>
+      <location>tests/integration/test_tts_node.py</location>
+      <location>tests/performance/test_tts_performance.py</location>
+      <location>tests/validation/test_real_tts.py</location>
+    </locations>
+    <ideas>
+      <test mapping="AC-001">test_cantonese_tts_synthesis - 验证粤语文本转语音基本功能</test>
+      <test mapping="AC-001">test_jiajia_voice_output - 验证jiajia发音人输出质量</test>
+      <test mapping="AC-002">test_speech_clarity - 测试语音清晰度指标</test>
+      <test mapping="AC-002">test_naturalness_score - 测试语音自然度评分</test>
+      <test mapping="AC-003">test_response_time - 测试合成响应时间<1秒</test>
+      <test mapping="AC-003">test_resource_usage - 测试CPU<20%, 内存<256MB</test>
+      <test mapping="AC-004">test_rate_control - 测试语速调节0.8x-1.2x</test>
+      <test mapping="AC-004">test_pitch_control - 测试音调调节±20%</test>
+      <test mapping="AC-004">test_volume_control - 测试音量控制50%-150%</test>
+      <test mapping="AC-005">test_ros2_integration - 测试ROS2话题和服务接口</test>
+      <test mapping="AC-005">test_asr_coordination - 测试与ASR系统协同工作</test>
+      <test mapping="AC-006">test_network_error_handling - 测试网络异常处理</test>
+      <test mapping="AC-006">test_api_retry_mechanism - 测试API重试机制</test>
+      <test mapping="AC-006">test_stability_2hours - 测试2小时连续运行稳定性</test>
+    </ideas>
+  </tests>
+</story-context>

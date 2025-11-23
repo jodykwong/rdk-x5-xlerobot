@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<story-context 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://download.ros.org/schema/story_context.xsd">
+    
+    <!-- 元数据 -->
+    <metadata>
+        <story-id>1.1</story-id>
+        <story-key>1-1-speech-wakeup-and-basic-recognition</story-key>
+        <story-title>语音唤醒和基础识别</story-title>
+        <story-status>drafted</story-status>
+        <epic-id>1</epic-id>
+        <project>xlerobot</project>
+        <generated-date>2025-11-08</generated-date>
+        <version>1.0</version>
+        <author>Scrum Master</author>
+        <skill-level>intermediate</skill-level>
+    </metadata>
+    
+    <!-- 用户故事 -->
+    <user-story>
+        <as-a>家庭用户</as-a>
+        <i-want>能够通过语音唤醒机器人并让机器人识别我的基本指令</i-want>
+        <so-that>我可以开始与机器人进行自然的语音交互</so-that>
+    </user-story>
+    
+    <!-- 验收标准 -->
+    <acceptance-criteria>
+        <criteria id="AC-1">
+            <description>支持自定义唤醒词，默认"傻强"</description>
+            <validation-method>功能测试</validation-method>
+            <success-criteria>支持设置和测试多个唤醒词</success-criteria>
+        </criteria>
+        <criteria id="AC-2">
+            <description>唤醒词识别准确率 >95% (安静环境下)</description>
+            <validation-method>性能测试</validation-method>
+            <success-criteria>在30dB环境下准确率≥95%</success-criteria>
+        </criteria>
+        <criteria id="AC-3">
+            <description>唤醒响应时间 <1秒</description>
+            <validation-method>性能测试</validation-method>
+            <success-criteria>唤醒检测到响应<1000ms</success-criteria>
+        </criteria>
+        <criteria id="AC-4">
+            <description>基础指令识别准确率 >90%</description>
+            <validation-method>准确率测试</validation-method>
+            <success-criteria>标准普通话/粤语指令识别≥90%</success-criteria>
+        </criteria>
+        <criteria id="AC-5">
+            <description>支持普通话和粤语混合识别</description>
+            <validation-method>功能测试</validation-method>
+            <success-criteria>混合语言环境下稳定识别</success-criteria>
+        </criteria>
+    </acceptance-criteria>
+    
+    <!-- 相关文档 -->
+    <artifacts>
+        <docs>
+            <doc path="docs/architecture-design-phase1-xlerobot.md">
+                <title>Phase 1 系统架构设计文档</title>
+                <section>ASR服务架构详细设计</section>
+                <snippet>语音输入模块发布者、唤醒词检测器实现、音频预处理和ASR服务节点的详细架构设计</snippet>
+            </doc>
+            <doc path="docs/epics-phase2-xlerobot.md">
+                <title>Epic 1: 语音交互核心系统</title>
+                <section>Story 1.1 详细需求</section>
+                <snippet>语音唤醒和基础识别的完整验收标准和实现要求，包括粤语"傻强"唤醒词的特殊适配</snippet>
+            </doc>
+            <doc path="docs/brownfield-level-4-compliance-report.md">
+                <title>Brownfield Level 4 企业级变更标准</title>
+                <section>开发环境强制要求</section>
+                <snippet>ROS2 Humble + TROS 2.4.3 + Python 3.10 的强制开发环境要求</snippet>
+            </doc>
+            <doc path="docs/real-hardware-test-report-2025-11-06.md">
+                <title>真实硬件测试报告</title>
+                <section>音频系统验证</section>
+                <snippet>USB音频设备 + ES8326板载音频的真实硬件验证结果，ASR 32ms延迟，TTS 430μs延迟</snippet>
+            </doc>
+            <doc path="docs/development-execution-testing-phase3-xlerobot.md">
+                <title>开发执行和测试方案</title>
+                <section>测试标准和方法</section>
+                <snippet>完整的测试分层策略，包括单元测试、集成测试、系统测试的标准和要求</snippet>
+            </doc>
+        </docs>
+        
+        <code>
+            <artifact path="src/modules/asr/config.py">
+                <kind>configuration</kind>
+                <symbol>ASRConfig</symbol>
+                <lines>1-50</lines>
+                <reason>ASR模块配置管理，包含音频参数、语言设置、性能指标等核心配置</reason>
+            </artifact>
+            <artifact path="src/modules/asr/streaming/wake_word_detector.py">
+                <kind>wake-word-detector</kind>
+                <symbol>WakeWordDetector</symbol>
+                <lines>1-100</lines>
+                <reason>已存在的唤醒词检测器实现，支持粤语"傻强"的专门检测，CNN+LSTM模型架构</reason>
+            </artifact>
+            <artifact path="src/modules/asr/audio_preprocessor.py">
+                <kind>audio-processor</kind>
+                <symbol>AudioPreprocessor</symbol>
+                <lines>1-50</lines>
+                <reason>音频预处理模块，包含噪声抑制、回声消除、VAD等核心功能</reason>
+            </artifact>
+            <artifact path="src/modules/asr/preprocessing/vad.py">
+                <kind>vad-detector</kind>
+                <symbol>VoiceActivityDetector</symbol>
+                <lines>1-50</lines>
+                <reason>语音活动检测(VAD)实现，用于检测语音信号的有无</reason>
+            </artifact>
+            <artifact path="src/xlerobot_llm/package.xml">
+                <kind>ros2-package</kind>
+                <symbol>xlerobot_llm</symbol>
+                <lines>1-50</lines>
+                <reason>ROS2包配置，包含Python和ROS2依赖关系</reason>
+            </artifact>
+            <artifact path="src/xlerobot_llm/setup.py">
+                <kind>python-package</kind>
+                <symbol>xlerobot_llm</symbol>
+                <lines>1-50</lines>
+                <reason>Python包配置，包含aiohttp、tenacity、jieba等依赖</reason>
+            </artifact>
+        </code>
+        
+        <dependencies>
+            <ecosystem name="python">
+                <package name="aiohttp" version=">=3.8.0" purpose="异步HTTP客户端，用于阿里云ASR API调用"/>
+                <package name="tenacity" version=">=8.0.0" purpose="重试机制库，用于网络请求重试"/>
+                <package name="jieba" version=">=0.42.1" purpose="中文分词库，用于中文文本处理"/>
+                <package name="librosa" version="latest" purpose="音频处理库，用于MFCC特征提取和音频分析"/>
+                <package name="numpy" version="latest" purpose="数值计算库，用于音频信号处理"/>
+            </ecosystem>
+            <ecosystem name="ros2">
+                <package name="rclpy" purpose="ROS2 Python客户端库"/>
+                <package name="std_msgs" purpose="ROS2标准消息包"/>
+                <package name="geometry_msgs" purpose="ROS2几何消息包"/>
+                <package name="audio_msgs" purpose="ROS2音频消息包"/>
+            </ecosystem>
+            <ecosystem name="tros">
+                <package name="hobot_audio" purpose="TROS音频驱动和硬件加速"/>
+                <package name="hobot_llamacpp" purpose="TROS本地大语言模型支持"/>
+            </ecosystem>
+        </dependencies>
+        
+        <interfaces>
+            <interface name="WakeWordDetector.start_listening" kind="method">
+                <signature>start_listening(callback: Optional[Callable] = None) -> None</signature>
+                <path>src/modules/asr/streaming/wake_word_detector.py</path>
+                <description>开始监听唤醒词的接口方法</description>
+            </interface>
+            <interface name="WakeWordDetector.detect_wake_word" kind="method">
+                <signature>detect_wake_word(audio: np.ndarray) -> Tuple[bool, float, float]</signature>
+                <path>src/modules/asr/streaming/wake_word_detector.py</path>
+                <description>检测唤醒词的核心方法，返回检测结果、置信度和响应时间</description>
+            </interface>
+            <interface name="ASRConfig.get" kind="method">
+                <signature>get(key: str, default: Any = None) -> Any</signature>
+                <path>src/modules/asr/config.py</path>
+                <description>获取配置值的接口方法，支持点号分隔的嵌套键</description>
+            </interface>
+            <interface name="AudioPreprocessor.preprocess_audio" kind="method">
+                <signature>preprocess_audio(audio_data: np.ndarray) -> np.ndarray</signature>
+                <path>src/modules/asr/audio_preprocessor.py</path>
+                <description>音频预处理的核心方法，包含噪声抑制、回声消除等功能</description>
+            </interface>
+        </interfaces>
+        
+        <constraints>
+            <constraint type="environment">
+                <description>开发环境必须使用ROS2 Humble + TROS 2.4.3 + Python 3.10</description>
+                <rationale>硬件平台RDK X5的兼容性要求</rationale>
+            </constraint>
+            <constraint type="performance">
+                <description>唤醒响应时间必须 < 1秒，ASR端到端延迟 < 2秒</description>
+                <rationale>用户体验要求的实时性能指标</rationale>
+            </constraint>
+            <constraint type="accuracy">
+                <description>唤醒词识别准确率 > 95%，基础指令识别准确率 > 90%</description>
+                <rationale>粤语语音交互的质量要求</rationale>
+            </constraint>
+            <constraint type="architecture">
+                <description>必须使用分层架构，支持模块化开发和部署</description>
+                <rationale>Brownfield Level 4企业级变更标准要求</rationale>
+            </constraint>
+            <constraint type="coding">
+                <description>必须遵循PEP8规范，代码覆盖率 > 90%</description>
+                <rationale>企业级代码质量标准</rationale>
+            </constraint>
+            <constraint type="testing">
+                <description>必须包含单元测试、集成测试、系统测试</description>
+                <rationale>企业级测试质量保证要求</rationale>
+            </constraint>
+            <constraint type="language">
+                <description>必须支持普通话和粤语混合识别，默认使用粤语"傻强"唤醒词</description>
+                <rationale>粤语文化适配和用户体验要求</rationale>
+            </constraint>
+        </constraints>
+    </artifacts>
+    
+    <!-- 测试标准和想法 -->
+    <tests>
+        <standards>
+            <paragraph>
+                遵循Brownfield Level 4企业级测试标准，采用三层测试架构：单元测试、集成测试、系统测试。
+                单元测试使用pytest框架，覆盖率要求 >90%；集成测试验证模块间接口正确性；
+                系统测试验证端到端功能和性能。所有测试必须在ROS2 Humble + TROS 2.4.3环境中执行。
+            </paragraph>
+        </standards>
+        
+        <locations>
+            <directory>src/modules/asr/tests/</directory>
+            <directory>src/modules/asr/streaming/tests/</directory>
+            <directory>src/modules/asr/preprocessing/tests/</directory>
+            <directory>tests/test_tts/</directory>
+            <directory>tests/test_cantonese/</directory>
+        </locations>
+        
+        <ideas>
+            <test-idea criteria-id="AC-1">
+                <description>测试自定义唤醒词配置功能</description>
+                <test-type>单元测试</test-type>
+                <implementation>测试ASRConfig中唤醒词配置的设置和获取</implementation>
+            </test-idea>
+            <test-idea criteria-id="AC-2">
+                <description>测试唤醒词识别准确率</description>
+                <test-type>性能测试</test-type>
+                <implementation>使用标准粤语语音样本测试识别准确率</implementation>
+            </test-idea>
+            <test-idea criteria-id="AC-3">
+                <description>测试唤醒响应时间</description>
+                <test-type>性能测试</test-type>
+                <implementation>测量从音频输入到唤醒检测的完整响应时间</implementation>
+            </test-idea>
+            <test-idea criteria-id="AC-4">
+                <description>测试基础指令识别准确率</description>
+                <test-type>功能测试</test-type>
+                <implementation>测试常见控制指令的识别准确率</implementation>
+            </test-idea>
+            <test-idea criteria-id="AC-5">
+                <description>测试普通话和粤语混合识别</description>
+                <test-type>功能测试</test-type>
+                <implementation>使用混合语音样本测试语言切换和识别稳定性</implementation>
+            </test-idea>
+        </ideas>
+    </tests>
+    
+</story-context>

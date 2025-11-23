@@ -1,0 +1,96 @@
+# XleRobot 多模态集成服务镜像
+# BMad-Method v6 Brownfield Level 4
+# 多模态处理和优化服务
+
+FROM xlerobot/base:1.8.0
+
+# 设置标签
+LABEL maintainer="XleRobot Team"
+LABEL version="1.8.0"
+LABEL service="multimodal"
+LABEL description="XleRobot Multimodal Integration Service"
+
+# 设置环境变量
+ENV SERVICE_NAME="xlerobot-multimodal" \
+    SERVICE_PORT=8004 \
+    SERVICE_VERSION="1.8.0" \
+    LOG_LEVEL="INFO" \
+    LOG_FORMAT="json" \
+    WORKERS=4 \
+    MAX_CONCURRENT_REQUESTS=1000
+
+# 安装多模态处理特定依赖
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # 图像处理库
+        libopencv-dev \
+        python3-opencv \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        libgomp1 \
+        # 音频处理增强
+        libsox-fmt-all \
+        sox \
+        # NPU/BPU支持库
+        # 根据实际硬件调整
+        && rm -rf /var/lib/apt/lists/*
+
+# 安装Python多模态依赖
+COPY requirements-multimodal.txt /tmp/requirements-multimodal.txt
+RUN pip install -r /tmp/requirements-multimodal.txt && \
+    rm /tmp/requirements-multimodal.txt
+
+USER xlerobot
+
+# 复制源代码
+WORKDIR /opt/xlerobot
+COPY --chown=xlerobot:xlerobot src/ ./src/
+COPY --chown=xlerobot:xlerobot config/ ./config/
+
+# 复制多模态服务配置
+COPY --chown=xlerobot:xlerobot deployment/config/services/multimodal.yaml ./config/service.yaml
+
+# 复制工作包1优化模块
+COPY --chown=xlerobot:xlerobot src/modules/asr/optimization/ ./src/modules/asr/optimization/
+COPY --chown=xlerobot:xlerobot src/modules/optimization/ ./src/modules/optimization/
+
+# 创建数据和缓存目录
+RUN mkdir -p /var/log/xlerobot/multimodal && \
+    mkdir -p /opt/xlerobot/cache/{l1,l2,l3} && \
+    mkdir -p /opt/xlerobot/models && \
+    mkdir -p /tmp/xlerobot/processing
+
+# 复制启动脚本
+COPY --chown=xlerobot:xlerobot docker/scripts/start_multimodal.sh /opt/xlerobot/scripts/start.sh
+RUN chmod +x /opt/xlerobot/scripts/start.sh
+
+# 复制健康检查脚本
+COPY --chown=xlerobot:xlerobot docker/scripts/health_check_multimodal.sh /opt/xlerobot/scripts/health_check.sh
+RUN chmod +x /opt/xlerobot/scripts/health_check.sh
+
+# 复制性能监控脚本
+COPY --chown=xlerobot:xlerobot docker/scripts/performance_monitor.sh /opt/xlerobot/scripts/performance_monitor.sh
+RUN chmod +x /opt/xlerobot/scripts/performance_monitor.sh
+
+# 设置入口点
+ENTRYPOINT ["/opt/xlerobot/scripts/start.sh"]
+
+# 暴露端口
+EXPOSE 8004 9094
+
+# 设置健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /opt/xlerobot/scripts/health_check.sh || exit 1
+
+# 添加监控标签
+LABEL monitoring.enabled="true" \
+      monitoring.port="9094" \
+      monitoring.path="/metrics" \
+      monitoring.service="multimodal" \
+      optimization.enabled="true" \
+      optimization.cache="multi-level" \
+      optimization.concurrent="work-stealing"

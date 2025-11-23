@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>xlerobot_camera</name>
+  <version>1.0.0</version>
+  <description>XleRobot IMX219 camera driver for ROS2 with VIN interface support</description>
+
+  <maintainer email="sunrise@xlerobot.com">XleRobot Team</maintainer>
+  <license>MIT</license>
+
+  <url type="website">https://github.com/xlerobot/xlerobot_camera</url>
+  <url type="bugtracker">https://github.com/xlerobot/xlerobot_camera/issues</url>
+  <url type="repository">https://github.com/xlerobot/xlerobot_camera</url>
+
+  <author email="sunrise@xlerobot.com">XleRobot Development Team</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

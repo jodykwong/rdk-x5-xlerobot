@@ -1,0 +1,75 @@
+# XleRobot多模态在线对话配置
+# Story 1.7: 多模态在线对话API集成
+# 严格遵循Epic 1纯在线架构
+
+# 在线对话API配置
+dialogue_api:
+  api_key: "${DASHSCOPE_API_KEY}"
+  model: "qwen-max"
+  api_endpoint: "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+  max_retries: 3
+  retry_delay: 1.0
+  timeout: 30
+
+# 会话管理配置
+session_management:
+  session_timeout: 300.0  # 5分钟
+  cleanup_interval: 60.0  # 1分钟清理一次
+  max_concurrent_sessions: 100
+
+# 粤语预处理配置
+cantonese_processor:
+  enable_standard_terms: true
+  enable_special_expressions: true
+  max_text_length: 2000
+  preserve_proper_nouns: true
+
+# ROS2节点配置
+ros2_node:
+  node_name: "online_dialogue_node"
+  qos_depth: 10
+  input_topics:
+    audio_input: "/audio_input"
+    image_input: "/image_input"
+    dialogue_input: "/dialogue_input"
+  output_topics:
+    dialogue_response: "/dialogue_response"
+    dialogue_status: "/dialogue_status"
+
+# 性能监控配置
+performance_monitoring:
+  enable_statistics: true
+  statistics_interval: 30.0
+  log_level: "INFO"
+  enable_performance_warnings: true
+  max_processing_time_ms: 5000
+
+# 错误处理配置
+error_handling:
+  enable_fallback_responses: true
+  max_retry_attempts: 3
+  retry_delay_ms: 1000
+  enable_error_recovery: true
+  default_fallback_response: "唔好意思，对话服务暂时唔能响应，请稍后再试。"
+
+# 调试配置
+debug:
+  enable_debug_logging: false
+  log_api_requests: false
+  log_api_responses: false
+  log_session_events: false
+  save_conversation_log: false
+  conversation_log_file: "/tmp/online_dialogue_conversations.log"
+
+# API调用限制
+api_limits:
+  max_requests_per_minute: 60
+  max_concurrent_requests: 5
+  rate_limit_enabled: true
+
+# 纯在线架构合规检查
+online_architecture_compliance:
+  strict_enforcement: true
+  prohibit_local_processing: true
+  require_api_calls: true
+  validate_compliance_on_startup: true

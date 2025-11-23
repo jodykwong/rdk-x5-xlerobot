@@ -1,0 +1,249 @@
+# XleRobot Alerting Rules
+# BMad-Method v6 Brownfield Level 4 - Story 1.8 Work Package 2
+
+groups:
+  - name: xlerobot_system_alerts
+    rules:
+      # NPU Performance Alerts
+      - alert: NPUHighLatency
+        expr: npu_inference_duration_seconds > 5
+        for: 30s
+        labels:
+          severity: critical
+          component: npu
+          service: xlerobot
+        annotations:
+          summary: "NPU inference latency exceeds threshold"
+          description: "NPU inference duration is {{ $value }}s, exceeding 5s threshold"
+
+      - alert: NPULowUtilization
+        expr: npu_utilization_percent < 70
+        for: 60s
+        labels:
+          severity: warning
+          component: npu
+          service: xlerobot
+        annotations:
+          summary: "NPU utilization below optimal level"
+          description: "NPU utilization is {{ $value }}%, below 70% optimal threshold"
+
+      # BPU Performance Alerts
+      - alert: BPUHighLatency
+        expr: bpu_processing_duration_seconds > 3
+        for: 30s
+        labels:
+          severity: critical
+          component: bpu
+          service: xlerobot
+        annotations:
+          summary: "BPU processing latency exceeds threshold"
+          description: "BPU processing duration is {{ $value }}s, exceeding 3s threshold"
+
+      # ASR Service Alerts
+      - alert: ASRHighLatency
+        expr: asr_processing_duration_seconds > 2
+        for: 45s
+        labels:
+          severity: warning
+          component: asr
+          service: xlerobot
+        annotations:
+          summary: "ASR processing latency high"
+          description: "ASR processing duration is {{ $value }}s, exceeding 2s threshold"
+
+      - alert: ASRLowAccuracy
+        expr: asr_accuracy_percent < 85
+        for: 120s
+        labels:
+          severity: warning
+          component: asr
+          service: xlerobot
+        annotations:
+          summary: "ASR accuracy below threshold"
+          description: "ASR accuracy is {{ $value }}%, below 85% threshold"
+
+      # TTS Service Alerts
+      - alert: TTSHighLatency
+        expr: tts_processing_duration_seconds > 1.5
+        for: 45s
+        labels:
+          severity: warning
+          component: tts
+          service: xlerobot
+        annotations:
+          summary: "TTS processing latency high"
+          description: "TTS processing duration is {{ $value }}s, exceeding 1.5s threshold"
+
+      - alert: TTSLowQuality
+        expr: tts_quality_score < 3.5
+        for: 60s
+        labels:
+          severity: warning
+          component: tts
+          service: xlerobot
+        annotations:
+          summary: "TTS quality score low"
+          description: "TTS quality score is {{ $value }}, below 3.5 threshold"
+
+      # LLM Service Alerts
+      - alert: LLMHighLatency
+        expr: llm_inference_duration_seconds > 3
+        for: 30s
+        labels:
+          severity: critical
+          component: llm
+          service: xlerobot
+        annotations:
+          summary: "LLM inference latency critical"
+          description: "LLM inference duration is {{ $value }}s, exceeding 3s threshold"
+
+      - alert: LLMHighErrorRate
+        expr: rate(llm_errors_total[5m]) > 0.1
+        for: 60s
+        labels:
+          severity: critical
+          component: llm
+          service: xlerobot
+        annotations:
+          summary: "LLM error rate too high"
+          description: "LLM error rate is {{ $value | humanizePercentage }}, exceeding 10% threshold"
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 300s
+        labels:
+          severity: warning
+          component: system
+          service: xlerobot
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}%, exceeding 80% threshold"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 300s
+        labels:
+          severity: warning
+          component: system
+          service: xlerobot
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}%, exceeding 85% threshold"
+
+      - alert: DiskSpaceRunningLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 300s
+        labels:
+          severity: critical
+          component: system
+          service: xlerobot
+        annotations:
+          summary: "Disk space running low"
+          description: "Disk usage is {{ $value }}%, exceeding 90% threshold"
+
+  - name: xlerobot_business_alerts
+    rules:
+      # SLA Monitoring Alerts
+      - alert: SLAViolation
+        expr: sla_compliance_percent < 95
+        for: 60s
+        labels:
+          severity: critical
+          component: sla
+          service: xlerobot
+        annotations:
+          summary: "SLA compliance violation"
+          description: "SLA compliance is {{ $value }}%, below 95% threshold"
+
+      - alert: RequestErrorRateHigh
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 60s
+        labels:
+          severity: warning
+          component: api
+          service: xlerobot
+        annotations:
+          summary: "High HTTP error rate"
+          description: "HTTP error rate is {{ $value | humanizePercentage }}, exceeding 5% threshold"
+
+      - alert: LowRequestThroughput
+        expr: rate(http_requests_total[5m]) < 10
+        for: 120s
+        labels:
+          severity: warning
+          component: api
+          service: xlerobot
+        annotations:
+          summary: "Low request throughput"
+          description: "Request throughput is {{ $value }} requests/sec, below 10 threshold"
+
+      - alert: VoiceInteractionFailure
+        expr: rate(voice_interaction_failures_total[5m]) / rate(voice_interactions_total[5m]) > 0.1
+        for: 60s
+        labels:
+          severity: warning
+          component: voice
+          service: xlerobot
+        annotations:
+          summary: "High voice interaction failure rate"
+          description: "Voice interaction failure rate is {{ $value | humanizePercentage }}, exceeding 10% threshold"
+
+  - name: xlerobot_infrastructure_alerts
+    rules:
+      # Container Health Alerts
+      - alert: ContainerDown
+        expr: up == 0
+        for: 60s
+        labels:
+          severity: critical
+          component: container
+          service: xlerobot
+        annotations:
+          summary: "Container is down"
+          description: "Container {{ $labels.instance }} has been down for more than 60 seconds"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) * 100 > 80
+        for: 300s
+        labels:
+          severity: warning
+          component: container
+          service: xlerobot
+        annotations:
+          summary: "Container high CPU usage"
+          description: "Container {{ $labels.name }} CPU usage is {{ $value }}%"
+
+      - alert: ContainerHighMemory
+        expr: container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""} * 100 > 85
+        for: 300s
+        labels:
+          severity: warning
+          component: container
+          service: xlerobot
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.name }} memory usage is {{ $value }}%"
+
+      # Network Alerts
+      - alert: HighNetworkLatency
+        expr: probe_duration_seconds > 0.5
+        for: 120s
+        labels:
+          severity: warning
+          component: network
+          service: xlerobot
+        annotations:
+          summary: "High network latency"
+          description: "Network latency to {{ $labels.instance }} is {{ $value }}s"
+
+      - alert: NetworkPacketLoss
+        expr: probe_success == 0
+        for: 60s
+        labels:
+          severity: critical
+          component: network
+          service: xlerobot
+        annotations:
+          summary: "Network connectivity loss"
+          description: "Network connectivity to {{ $labels.instance }} is lost"

@@ -1,0 +1,6 @@
+# 请求
+string device_id     # 设备ID
+---
+# 响应
+bool success          # 是否成功
+string message        # 消息

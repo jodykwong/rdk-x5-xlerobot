@@ -1,0 +1,8 @@
+# 请求
+string language            # 语言
+uint32 sample_rate         # 采样率
+string format              # 格式
+---
+# 响应
+bool success                 # 是否成功
+string message               # 消息

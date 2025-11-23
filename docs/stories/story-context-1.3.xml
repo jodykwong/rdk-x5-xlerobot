@@ -1,0 +1,125 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>基础语音识别 (阿里云ASR API集成)</title>
+    <status>Ready</status>
+    <generatedAt>2025-11-09T16:10:00Z</generatedAt>
+    <generator>BMAD Story Context Workflow (Completed)</generator>
+    <sourceStoryPath>docs/stories/1-3-basic-speech-recognition.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>粤语用户</asA>
+    <iWant>机器人能够通过阿里云ASR API识别我的粤语语音指令</iWant>
+    <soThat>我可以获得准确的语音识别结果并执行相应的操作</soThat>
+    <tasks>### 任务分解:
+1. 阿里云ASR API集成开发 (AC-001, AC-006) - MVP核心
+   - 1.1 创建阿里云ASR服务客户端类 (150行)
+   - 1.2 配置管理系统 (50行)
+2. 音频处理管道 (AC-002) - MVP核心
+   - 2.1 音频格式转换器 (100行)
+3. 粤语ASR识别引擎 (AC-003, AC-004) - MVP核心
+   - 3.1 ASR识别核心服务 (100行)
+   - 3.2 结果处理和发布 (80行)
+4. ROS2节点集成 (AC-004, AC-005) - MVP核心
+   - 4.1 ROS2服务节点 (80行)
+5. MVP测试套件 (所有AC验证) - 可验证性保证
+   - 5.1 单元测试 (110行)
+   - 5.2 集成测试 (130行)
+   - 5.3 验收测试 (核心用户场景) (50行)</tasks>
+  </story>
+
+  <acceptanceCriteria>1. **阿里云ASR API集成** (AC-001): 成功集成阿里云ASR API (粤语paraformer-v1模型); API密钥配置正确，能够通过认证; 支持HTTPS请求和响应处理; 错误处理机制完整（网络错误、API错误等）
+2. **音频格式处理** (AC-002): 支持PCM格式音频输入（16kHz, 16-bit, mono）; PCM转WAV格式转换正确; WAV转Base64编码正确; 音频数据格式符合阿里云API要求
+3. **粤语语音识别** (AC-003): 粤语语音识别准确率 > 85% (标准测试环境); 支持粤语常用词汇和短语识别; 识别结果以UTF-8编码正确返回; 支持最长10秒的语音输入
+4. **识别结果处理** (AC-004): JSON格式识别结果解析正确; 识别置信度提取和验证; 空结果和错误结果处理; 结果通过ROS2话题正确发布
+5. **系统性能要求** (AC-005): 端到端响应时间 < 3秒（从录音开始到结果输出）; API调用成功率 > 95%; 系统内存使用 < 100MB; CPU使用率 < 50%（单核）
+6. **错误处理和恢复** (AC-006): 网络连接失败自动重试（最多3次）; API限流和错误码处理; 音频录制失败检测和报告; 系统异常恢复机制</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd-simple-online-services.md" title="纯在线服务PRD文档" section="技术架构">基于阿里云API的纯在线语音服务架构，包含ASR、TTS和唤醒词服务的完整设计，为Story 1.3提供业务需求基础。</doc>
+      <doc path="docs/architecture-design-simple-online-services.md" title="纯在线服务技术架构设计" section="系统架构设计">详细的技术架构设计，定义了音频处理管道、API集成层和ROS2节点架构，为Story 1.3提供技术实现指导。</doc>
+      <doc path="docs/aliyun-api-integration-guide.md" title="阿里云API集成指南" section="集成概述">阿里云API集成的完整指南，包含账户配置、API调用方式和错误处理机制，为Story 1.3提供API集成基础。</doc>
+      <doc path="docs/testing-strategy-simple-online-services.md" title="纯在线服务测试策略" section="测试策略概览">完整的测试策略文档，定义了单元测试、集成测试和验收测试的标准和方法，为Story 1.3提供测试指导。</doc>
+      <doc path="docs/three-iterations-wbs.md" title="三个迭代WBS架构定义" section="迭代1-Epic分解">Story 1.3在整个三个迭代架构中的位置，明确了其在迭代1纯在线服务中的作用和依赖关系。</doc>
+    </docs>
+    <code>
+      <artifact path="src/modules/asr/aliyun_asr_service.py" kind="service" symbol="AliyunASRService" lines="1-50" reason="现有阿里云ASR服务实现，包含基础API调用和错误处理，Story 1.3需要简化版本" />
+      <artifact path="src/modules/asr/audio_processor_asr.py" kind="processor" symbol="ASRAudioProcessor" lines="1-30" reason="现有音频处理模块，包含PCM/WAV/Base64转换，Story 1.3可以直接复用" />
+      <artifact path="src/nodes/asr_service_node.py" kind="node" symbol="ASRServiceNode" lines="1-50" reason="现有ROS2节点实现，包含ASR服务集成和话题通信，Story 1.3需要适配简化版本" />
+      <artifact path="src/modules/asr/asr_retry_manager.py" kind="manager" symbol="ASRRetryManager" lines="1-100" reason="现有重试管理器，Story 1.3可以复用网络重试逻辑" />
+      <artifact path="src/audio_msg/msg/ASRResult.msg" kind="message" symbol="ASRResult" reason="现有ROS2消息定义，Story 1.3可以直接使用" />
+      <artifact path="src/audio_msg/msg/ASRStatus.msg" kind="message" symbol="ASRStatus" reason="现有ROS2消息定义，Story 1.3可以直接使用" />
+      <artifact path="src/audio_msg/srv/ASRConfigure.srv" kind="service" symbol="ASRConfigure" reason="现有ROS2服务定义，Story 1.3可以直接使用" />
+    </code>
+    <dependencies>
+      <ecosystem name="python">
+        <package name="requests" version=">=2.31.0" />
+        <package name="numpy" version="1.24.3" />
+        <package name="librosa" version="0.10.1" />
+        <package name="soundfile" version="0.12.1" />
+        <package name="alibabacloud-tea-openapi" version="0.3.7" />
+        <package name="dashscope" version=">=1.17.0" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <rule id="architecture_constraint" type="must">严格遵循纯在线架构，禁止本地ASR处理，100%依赖阿里云API</rule>
+    <rule id="ros2_integration" type="must">所有功能必须通过ROS2节点封装，使用标准话题/服务接口</rule>
+    <rule id="python_version" type="must">使用系统Python 3.10，确保兼容性</rule>
+    <rule id="mvp_simplicity" type="should">核心代码量控制在~380行，专注基础功能实现，避免过度工程化</rule>
+    <rule id="error_handling" type="must">实现完整的错误处理机制，包括网络错误、API错误和系统异常恢复</rule>
+    <rule id="testing_requirement" type="must">必须包含真实API验证测试，确保100%可验证性</rule>
+  </constraints>
+
+  <interfaces>
+    <interface name="AliyunASRServiceInterface" kind="service" signature="class AliyunASRService:
+    def __init__(self, config: ASRConfig)
+    def recognize_speech(self, audio_data: bytes, format: str) -> Dict[str, Any]
+    def configure(self, language: str, format: str) -> bool
+    def get_status(self) -> Dict[str, Any]" path="src/modules/asr/aliyun_asr_service.py" />
+    <interface name="ASRAudioProcessorInterface" kind="processor" signature="class ASRAudioProcessor:
+    def pcm_to_wav(self, pcm_data: bytes, sample_rate: int, channels: int) -> bytes
+    def wav_to_base64(self, wav_data: bytes) -> str
+    def validate_audio_format(self, audio_data: bytes, format: str) -> bool" path="src/modules/asr/audio_processor_asr.py" />
+    <interface name="ASRServiceNodeInterface" kind="node" signature="class ASRServiceNode(Node):
+    def recognize_speech_callback(self, msg: AudioData) -> None
+    def recognize_speech_service(self, request: ASRConfigure.Request) -> ASRConfigure.Response
+    def get_asr_status(self) -> ASRStatus" path="src/nodes/asr_service_node.py" />
+  </interfaces>
+
+  <tests>
+    <standards>单元测试覆盖率目标90%，集成测试覆盖率目标85%，必须使用真实阿里云API进行测试，所有AC必须有明确的测试验证方法。测试环境必须使用真实硬件和网络环境，禁止使用Mock数据。</standards>
+    <locations>tests/unit/ - 单元测试目录，tests/integration/ - 集成测试目录，tests/validation/ - 真实API验证测试目录</locations>
+    <ideas>
+      <test ac="AC-001" title="阿里云ASR API集成测试">测试阿里云ASR API的认证、HTTPS请求、响应处理和错误重试机制</test>
+      <test ac="AC-002" title="音频格式处理测试">测试PCM到WAV转换、WAV到Base64编码和音频格式验证</test>
+      <test ac="AC-003" title="粤语语音识别测试">测试粤语语音识别准确率和识别结果格式</test>
+      <test ac="AC-004" title="识别结果处理测试">测试JSON结果解析、置信度过滤和ROS2话题发布</test>
+      <test ac="AC-005" title="系统性能测试">测试端到端响应时间、API调用成功率和资源使用情况</test>
+      <test ac="AC-006" title="错误处理和恢复测试">测试网络重试机制、API限流处理和系统异常恢复</test>
+      <test ac="user_scenario" title="核心用户场景测试">测试基础粤语指令识别("打开灯光")、简单对话识别("今天天气如何")、数字识别测试("设置闹钟到8点")</test>
+    </ideas>
+  </tests>
+
+  <workflow>
+    <completedSteps>
+      <step id="1" name="Locate Story 1.3 and initialize output">✅ Completed</step>
+      <step id="2" name="Collect relevant documentation">✅ Completed</step>
+      <step id="3" name="Analyze existing code artifacts">✅ Completed</step>
+      <step id="4" name="Gather dependencies">✅ Completed</step>
+      <step id="5" name="Extract testing standards">✅ Completed</step>
+      <step id="6" name="Validate and save">✅ Completed</step>
+      <step id="7" name="Update story status and context reference">✅ Completed</step>
+    </completedSteps>
+    <workflowAgent>bmad_master</workflowAgent>
+    <workflowCompletionTime>2025-11-09T16:10:00Z</workflowCompletionTime>
+    <totalArtifacts>6</totalArtifacts>
+    <totalConstraints>6</totalConstraints>
+    <totalInterfaces>3</totalInterfaces>
+    <totalTestIdeas>7</totalTestIdeas>
+  </workflow>
+</story-context>

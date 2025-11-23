@@ -1,0 +1,1086 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Epic1 ASR系统核心模块
+整合在线ASR服务，支持唤醒词检测和语音识别
+"""
+
+import asyncio
+import logging
+import sys
+import time
+# import speech_recognition as sr  # 替换为线程安全录音器
+from .thread_safe_audio_recorder import ThreadSafeAudioRecorder, RecordingState
+import numpy as np
+import wave
+import tempfile
+import os
+import threading
+from pathlib import Path
+from typing import Optional, Dict, Any
+from enum import Enum
+
+# 添加项目路径
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+
+# 使用WebSocket ASR服务（根据架构文档要求）
+from modules.asr.websocket.websocket_asr_service import AliyunASRWebSocketService
+from modules.asr.streaming.wake_word_detector import WakeWordDetector
+# ASR桥接不需要TTS功能，暂时注释掉
+# from modules.tts.engine.aliyun_tts_engine import AliyunTTSEngine
+
+# 避免导入LLM模块以绕过ROS2依赖
+# from modules.llm.qwen_multimodal_llm import QwenMultimodalLLM
+
+logger = logging.getLogger(__name__)
+
+class ASRState(Enum):
+    """ASR系统状态枚举"""
+    IDLE = "idle"                      # 空闲，等待唤醒词
+    WAKE_DETECTED = "wake_detected"    # 检测到唤醒词
+    LISTENING_COMMAND = "listening_command"  # 监听用户指令
+    PROCESSING = "processing"          # 处理指令
+    RESPONDING = "responding"          # 播放回复
+
+# 导入阿里云NLS官方SDK
+try:
+    import sys
+    sys.path.append('/home/sunrise/.local/lib/python3.10/site-packages')
+    from nls.token import getToken
+    OFFICIAL_SDK_AVAILABLE = True
+    logger.info("✅ 阿里云NLS官方SDK可用")
+except ImportError as e:
+    OFFICIAL_SDK_AVAILABLE = False
+    logger.warning(f"⚠️ 官方SDK不可用: {e}")
+
+    # 备用：Token管理器
+    try:
+        from aliyun_nls_token_manager import get_token_manager
+        TOKEN_MANAGER_AVAILABLE = True
+    except ImportError:
+        TOKEN_MANAGER_AVAILABLE = False
+
+class ASRSystem:
+    """Epic1 ASR系统集成器"""
+
+    def __init__(self):
+        self.project_root = Path("/home/sunrise/xlerobot")
+        self.asr_service = None
+        self.wake_detector = None
+        self.tts_client = None
+        self.llm_client = None
+        self.is_running = False
+        self.audio_input = None
+        # self.recognizer = sr.Recognizer()  # 已替换为ThreadSafeAudioRecorder
+        self.audio_recorder = None
+        self.recording = False
+        self.last_wake_time = 0
+        self.wake_cooldown = 2  # 唤醒词检测冷却时间（秒）
+        self.conversation_history = []  # 对话历史
+        self.max_history_length = 10  # 最大历史记录数
+
+        # 状态机管理
+        self.state = ASRState.IDLE
+
+        # 新增：结果回调函数 - 用于ROS2桥接
+        self.result_callback = None  # 添加此行
+
+        # 初始化状态
+        self.initialized = False
+        self.audio_configured = False
+
+        # 优化音频参数配置（基于ThreadSafeAudioRecorder）
+        self._configure_audio_parameters()
+
+    def _configure_audio_parameters(self):
+        """配置优化音频参数（基于ThreadSafeAudioRecorder）"""
+        try:
+            # ThreadSafeAudioRecorder不需要额外的音频参数配置
+            # 音频参数在ThreadSafeAudioRecorder内部已经优化
+            self.audio_configured = True
+
+            logger.info("✅ 音频参数配置完成 - ThreadSafeAudioRecorder内置优化")
+            logger.debug("📊 音频参数: 16kHz, 单声道, 16-bit, 线程安全")
+
+        except Exception as e:
+            logger.warning(f"⚠️ 音频参数配置失败，使用默认配置: {e}")
+            self.audio_configured = False
+
+    def initialize(self) -> bool:
+        """初始化ASR系统"""
+        try:
+            logger.info("🚀 初始化Epic1 ASR系统...")
+
+            # 设置麦克风 - 使用智能设备选择器
+            try:
+                # 导入音频设备管理器
+                from .audio_device_manager import get_device_manager, setup_16khz_recording
+
+                logger.info("🔧 使用智能设备选择器初始化麦克风...")
+                device_manager = get_device_manager()
+
+                # 获取最佳输入设备
+                best_device = device_manager.get_best_input_device()
+                if best_device:
+                    logger.info(f"🎯 选择最佳输入设备: {best_device.name} (索引: {best_device.index})")
+
+                    # 设置16kHz录音环境
+                    setup_result = setup_16khz_recording(best_device.index)
+                    if setup_result["success"]:
+                        logger.info(f"✅ 16kHz录音环境设置成功: {setup_result['device_name']}")
+                        logger.info(f"📊 设备信息: 索引={setup_result['device_index']}, 采样率=16kHz, 声道=单声道")
+
+                        # 初始化线程安全录音器
+                                                # 使用ALSA录音器替代ThreadSafeAudioRecorder
+                        try:
+                            self.audio_recorder = SimpleALSARecorder()
+                            logger.info("✅ 使用ALSA录音器初始化成功")
+                        except Exception as e:
+                            logger.error(f"❌ ALSA录音器初始化失败: {e}")
+                            self.audio_recorder = None
+                        # self.audio_recorder = SimpleALSARecorder()
+                        logger.info("✅ 智能麦克风初始化成功")
+                    else:
+                        logger.error(f"❌ 16kHz录音环境设置失败: {setup_result.get('error', '未知错误')}")
+                        raise Exception("16kHz环境设置失败")
+                else:
+                    logger.error("❌ 未找到可用的输入设备")
+                    raise Exception("无可用输入设备")
+
+            except Exception as e:
+                logger.error(f"❌ 智能设备选择失败: {e}")
+                # 回退到默认设备选择
+                logger.warning("⚠️ 回退到默认设备选择...")
+                try:
+                                            # 使用ALSA录音器替代ThreadSafeAudioRecorder
+                        try:
+                            self.audio_recorder = SimpleALSARecorder()
+                            logger.info("✅ 使用ALSA录音器初始化成功")
+                        except Exception as e:
+                            logger.error(f"❌ ALSA录音器初始化失败: {e}")
+                            self.audio_recorder = None
+                        # self.audio_recorder = SimpleALSARecorder()
+                    logger.info("✅ 使用默认线程安全录音器")
+                except Exception as e2:
+                    logger.error(f"❌ 默认线程安全录音器初始化也失败: {e2}")
+                    # 回退到ALSA录音器
+                    logger.warning("⚠️ 回退到ALSA录音器...")
+                    try:
+                        from .simple_alsa_recorder import SimpleALSARecorder
+                        self.audio_recorder = SimpleALSARecorder()
+                        logger.info("✅ 使用ALSA录音器")
+                    except Exception as e3:
+                        logger.error(f"❌ ALSA录音器初始化也失败: {e3}")
+                        self.audio_recorder = None
+
+            # 初始化ASR服务
+            app_key = os.environ.get("ALIYUN_NLS_APPKEY", "")
+            token = ""
+
+            # 优先使用官方SDK获取Token
+            if OFFICIAL_SDK_AVAILABLE:
+                try:
+                    access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
+                    access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "")
+
+                    if access_key_id and access_key_secret:
+                        token = getToken(access_key_id, access_key_secret)
+                        if token:
+                            logger.info("✅ Token获取成功 (使用官方SDK)")
+                        else:
+                            logger.error("❌ 官方SDK获取Token失败")
+                    else:
+                        logger.error("❌ 阿里云访问密钥未设置")
+                except Exception as e:
+                    logger.error(f"❌ 官方SDK获取Token异常: {e}")
+
+            # 备用：Token管理器
+            elif 'TOKEN_MANAGER_AVAILABLE' in locals() and TOKEN_MANAGER_AVAILABLE:
+                try:
+                    token_manager = get_token_manager()
+                    token = token_manager.get_token()
+                    if token:
+                        logger.info("✅ Token获取成功 (使用Token管理器)")
+                    else:
+                        logger.warning("⚠️ Token管理器获取失败")
+                except Exception as e:
+                    logger.warning(f"⚠️ Token管理器异常: {e}")
+
+            # 使用WebSocket ASR服务（根据架构文档要求）
+            try:
+                self.asr_service = AliyunASRWebSocketService()
+                logger.info("✅ WebSocket ASR服务初始化成功")
+            except Exception as e:
+                logger.error(f"❌ WebSocket ASR服务初始化失败: {e}")
+                self.asr_service = None
+
+            # 初始化唤醒词检测器
+            self.wake_word_detector = WakeWordDetector()
+            logger.info("✅ 唤醒词检测器初始化成功")
+
+            # 初始化TTS服务
+            try:
+                # 动态导入TTS引擎，避免导入问题
+                from modules.tts.engine.aliyun_tts_engine import AliyunTTSEngine
+
+                tts_config = {
+                    'access_key_id': os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID", ""),
+                    'access_key_secret': os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET", ""),
+                    'app_key': app_key,
+                    'region': 'cn-shanghai',
+                    'voice': 'jiajia',  # 粤语音色（与阿里云控制台一致）
+                    'format': 'wav'
+                }
+                self.tts_client = AliyunTTSEngine(config=tts_config)
+                logger.info("✅ TTS服务初始化成功")
+            except Exception as e:
+                logger.warning(f"⚠️ TTS服务初始化失败: {e}")
+                self.tts_client = None
+
+            # 初始化多模态LLM (延迟导入以避免ROS2依赖)
+            try:
+                # 动态导入多模态LLM，避免通过LLM模块的__init__.py
+                import sys
+                from pathlib import Path
+                llm_path = Path(__file__).parent.parent.parent / "modules" / "llm" / "qwen_multimodal_llm.py"
+                if llm_path.exists():
+                    sys.path.insert(0, str(llm_path.parent))
+                    from qwen_multimodal_llm import QwenMultimodalLLM
+                    self.llm_client = QwenMultimodalLLM()
+
+                    if asyncio.iscoroutinefunction(self.llm_client.initialize):
+                        # 异步初始化
+                        loop = asyncio.get_event_loop()
+                        if loop.is_running():
+                            # 如果已在事件循环中，创建任务
+                            asyncio.create_task(self._async_init_llm())
+                        else:
+                            # 如果没有事件循环，运行直到完成
+                            loop.run_until_complete(self._async_init_llm())
+                    else:
+                        # 同步初始化
+                        if self.llm_client.initialize():
+                            logger.info("✅ 多模态LLM初始化成功")
+                        else:
+                            logger.warning("⚠️ 多模态LLM初始化失败，使用基础回复模式")
+                            self.llm_client = None
+                else:
+                    logger.warning(f"⚠️ 多模态LLM文件不存在: {llm_path}")
+                    self.llm_client = None
+            except Exception as e:
+                logger.warning(f"⚠️ 多模态LLM初始化异常: {e}")
+                self.llm_client = None
+
+        except Exception as e:
+            logger.error(f"❌ ASR系统初始化失败: {e}")
+            self.initialized = False
+            return False
+
+        logger.info("🎉 ASR系统初始化完成！")
+        self.initialized = True
+        return True
+
+    async def _async_init_llm(self):
+        """异步初始化LLM"""
+        try:
+            if await self.llm_client.initialize():
+                logger.info("✅ 多模态LLM初始化成功")
+            else:
+                logger.warning("⚠️ 多模态LLM初始化失败，使用基础回复模式")
+                self.llm_client = None
+        except Exception as e:
+            logger.warning(f"⚠️ 多模态LLM初始化异常: {e}")
+            self.llm_client = None
+
+    def start(self) -> bool:
+        """启动ASR系统"""
+        if self.is_running:
+            logger.warning("⚠️ ASR系统已在运行")
+            return True
+
+        try:
+            logger.info("🎤 启动语音交互服务...")
+            self.is_running = True
+            self._start_time = time.time()
+
+            # 初始化线程和事件循环
+            self._stop_event = threading.Event()
+            self._listening_thread = None
+
+            # 系统启动后进入静默监听模式，等待唤醒词
+            logger.info("🎯 系统已启动，进入静默监听模式，等待唤醒词 '傻强'...")
+
+            # 在独立线程中启动监听循环
+            self._start_listening_thread()
+
+            logger.info("✅ ASR系统启动成功，开始监听...")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ ASR系统启动失败: {e}")
+            self.is_running = False
+            return False
+
+    def _start_listening_thread(self):
+        """启动监听线程"""
+        def run_event_loop():
+            """在独立线程中运行事件循环和监听循环"""
+            try:
+                # 创建新的事件循环
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+                logger.info("🔄 监听线程事件循环已启动")
+
+                # 运行监听循环
+                loop.run_until_complete(self._listening_loop())
+
+            except Exception as e:
+                logger.error(f"❌ 监听线程错误: {e}")
+            finally:
+                logger.info("⏹️ 监听线程已停止")
+
+        # 启动守护线程
+        self._listening_thread = threading.Thread(
+            target=run_event_loop,
+            name="ASRListeningThread",
+            daemon=True
+        )
+        self._listening_thread.start()
+        logger.info("🧵 监听线程已启动")
+
+    def start_listening(self) -> bool:
+        """启动监听（兼容启动脚本调用）"""
+        return self.start()
+
+    def stop_listening(self):
+        """停止监听"""
+        self.stop()
+
+    def cleanup(self):
+        """清理资源"""
+        self.stop()
+
+    def get_status(self) -> Dict[str, Any]:
+        """获取系统状态"""
+        import time
+        uptime_seconds = 0
+        if hasattr(self, '_start_time'):
+            uptime_seconds = int(time.time() - self._start_time)
+
+        return {
+            "state": "running" if self.is_running else "stopped",
+            "asr_state": self.state.value,  # 添加ASR状态
+            "uptime_seconds": uptime_seconds,
+            "audio_recorder_available": self.audio_recorder is not None,
+          "recorder_state": self.audio_recorder.get_state().value if self.audio_recorder else "unknown",
+            "stats": {
+                "total_listens": getattr(self, '_total_listens', 0),
+                "wake_detections": getattr(self, '_wake_detections', 0),
+                "successful_recognitions": getattr(self, '_successful_recognitions', 0)
+            }
+        }
+
+    async def _listening_loop(self):
+        """语音监听循环"""
+        logger.info("🎯 开始监听唤醒词...")
+        logger.info(f"🤖 初始状态: {self.state.value}")
+
+        # 初始化统计计数器
+        self._total_listens = 0
+        self._wake_detections = 0
+        self._successful_recognitions = 0
+
+        # 启动唤醒词检测器
+        if self.wake_word_detector:
+            await self.wake_word_detector.start_listening()
+
+        try:
+            while self.is_running:
+                # 检查停止事件
+                if hasattr(self, '_stop_event') and self._stop_event.is_set():
+                    logger.info("⏹️ 收到停止信号，退出监听循环")
+                    break
+
+                self._total_listens += 1
+
+                # 每隔一段时间打印监听状态
+                if self._total_listens % 20 == 1:  # 每20次监听打印一次
+                    logger.info(f"🎯 监听进行中... (第{self._total_listens}次)")
+
+                # 使用asyncio.wait_for添加超时，以便定期检查停止事件
+                try:
+                    # 持续监听音频（带超时）
+                    audio_data = await asyncio.wait_for(
+                        self._listen_for_audio(),
+                        timeout=3.0  # 3秒超时，给用户足够时间说话
+                    )
+                except asyncio.TimeoutError:
+                    # 超时了，继续下一轮循环以检查停止事件
+                    continue
+
+                if audio_data:
+                    logger.debug("🎤 检测到音频输入，检查唤醒词...")
+
+                    # 检查是否包含唤醒词
+                    if await self._check_wake_word(audio_data):
+                        self._wake_detections += 1
+                        logger.info("🔔 检测到唤醒词：傻强")
+
+                        # 状态转换: IDLE -> WAKE_DETECTED
+                        self.state = ASRState.WAKE_DETECTED
+
+                        # 播放欢迎语（而非确认音）
+                        logger.info("🔊 播放欢迎语...")
+                        self.play_response("傻强系度,老细有乜可以帮到你!")
+
+                        # 等待播放完成（优化：减少等待时间）
+                        await asyncio.sleep(1)
+
+                        # 状态转换: WAKE_DETECTED -> LISTENING_COMMAND
+                        self.state = ASRState.LISTENING_COMMAND
+
+                        # 重新监听用户指令（新音频！）
+                        command_audio = await self._listen_for_command(timeout=5.0)
+
+                        if command_audio:
+                            # 状态转换: LISTENING_COMMAND -> PROCESSING
+                            self.state = ASRState.PROCESSING
+
+                            # 识别用户指令
+                            text = await self._recognize_speech_from_audio(command_audio)
+                            if text:
+                                self._successful_recognitions += 1
+                                logger.info(f"📝 识别结果: {text}")
+
+                                # 新增：触发回调 - 创建结果对象并传递给回调函数
+                                if self.result_callback:
+                                    try:
+                                        # 创建简单的结果对象
+                                        class ASRResult:
+                                            def __init__(self, text, success=True, confidence=1.0, error=None):
+                                                self.text = text
+                                                self.success = success
+                                                self.confidence = confidence
+                                                self.error = error
+
+                                        result_obj = ASRResult(text=text, success=True, confidence=0.9)
+                                        self.result_callback(result_obj)  # 触发回调
+                                    except Exception as e:
+                                        logger.error(f"❌ 结果回调失败: {e}")
+
+                                # 处理回复
+                                response = await self._process_command(text)
+                                if response:
+                                    logger.info(f"🔊 回复: {response}")
+
+                                    # 状态转换: PROCESSING -> RESPONDING
+                                    self.state = ASRState.RESPONDING
+
+                                    self.play_response(response)
+                            else:
+                                logger.warning("⚠️ 语音识别失败")
+
+                                # 新增：触发失败回调
+                                if self.result_callback:
+                                    try:
+                                        class ASRResult:
+                                            def __init__(self, text, success=True, confidence=1.0, error=None):
+                                                self.text = text
+                                                self.success = success
+                                                self.confidence = confidence
+                                                self.error = error
+
+                                        result_obj = ASRResult(text="", success=False, confidence=0.0, error="语音识别失败")
+                                        self.result_callback(result_obj)  # 触发回调
+                                    except Exception as e:
+                                        logger.error(f"❌ 结果回调失败: {e}")
+                        else:
+                            logger.warning("⚠️ 未检测到用户指令，超时返回监听模式")
+
+                        # 状态转换: 返回 IDLE
+                        self.state = ASRState.IDLE
+                        logger.info("🔄 返回空闲监听模式")
+
+                # 短暂休息，避免CPU占用过高
+                await asyncio.sleep(0.1)
+
+        except Exception as e:
+            logger.error(f"❌ 监听循环异常: {e}")
+        finally:
+            # 停止唤醒词检测器
+            if self.wake_word_detector:
+                await self.wake_word_detector.stop_listening()
+            logger.info("🏁 监听循环已结束")
+
+    async def _listen_for_audio(self) -> Optional[np.ndarray]:
+        """监听音频输入 - 使用线程安全录音器"""
+        if not self.audio_recorder:
+            logger.warning("⚠️ 录音器未初始化，模拟监听...")
+            # 模拟监听 - 返回None表示没有音频
+            await asyncio.sleep(0.1)
+            return None
+
+        try:
+            # 检查录音器状态，避免无效调用
+            recorder_state = self.audio_recorder.get_state()
+            if recorder_state.name != 'IDLE':
+                logger.debug(f"录音器忙碌，跳过本次监听: {recorder_state.value}")
+                await asyncio.sleep(0.1)
+                return None
+
+            # 启动录音
+            logger.debug("🎤 开始音频监听...")
+            success = self.audio_recorder.start_recording(duration=5.0)
+
+            if not success:
+                logger.debug("⚠️ 录音启动失败")
+                return None
+
+            # 使用事件等待机制，而非固定sleep
+            completion_event = self.audio_recorder.get_completion_event()
+            try:
+                await asyncio.wait_for(
+                    asyncio.to_thread(completion_event.wait),
+                    timeout=6.0
+                )
+                logger.debug("✅ 录音完成事件触发")
+            except asyncio.TimeoutError:
+                logger.warning("⏰ 录音超时，强制停止")
+                if self.audio_recorder.get_state() == RecordingState.RECORDING:
+                    self.audio_recorder.force_stop()
+
+            # 获取音频数据
+            audio_data = self.audio_recorder.stop_recording()
+
+            if len(audio_data) > 0:
+                logger.debug(f"🎤 成功捕获音频片段: {len(audio_data)} samples")
+                return audio_data
+            else:
+                logger.debug("⏰ 录音完成但无音频数据")
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ 音频监听失败: {type(e).__name__}: {e}")
+            # 如果监听失败，返回None让循环继续
+            return None
+
+    async def _listen_for_command(self, timeout: float = 5.0) -> Optional[np.ndarray]:
+        """
+        监听用户命令（唤醒后）- 使用ThreadSafeAudioRecorder
+
+        Args:
+            timeout: 超时时间（秒）
+
+        Returns:
+            音频数据或None
+        """
+        if not self.audio_recorder:
+            logger.error("❌ ThreadSafeAudioRecorder未初始化")
+            return None
+
+        try:
+            logger.info(f"🎤 等待用户指令（超时{timeout}秒）...")
+
+            # 使用ThreadSafeAudioRecorder录音，时长为超时时间
+            duration = min(timeout, 10.0)  # 最多10秒
+            success = self.audio_recorder.start_recording(duration=duration)
+
+            if not success:
+                current_state = self.audio_recorder.get_state()
+                logger.warning(f"⚠️ 命令录音启动失败，当前状态: {current_state.value}")
+                return None
+
+            # 使用事件等待机制，而非固定sleep
+            completion_event = self.audio_recorder.get_completion_event()
+            try:
+                await asyncio.wait_for(
+                    asyncio.to_thread(completion_event.wait),
+                    timeout=duration + 2.0  # 额外2秒缓冲
+                )
+                logger.debug("✅ 命令录音完成事件触发")
+            except asyncio.TimeoutError:
+                logger.warning("⏰ 命令录音超时，强制停止")
+                if self.audio_recorder.get_state() == RecordingState.RECORDING:
+                    self.audio_recorder.force_stop()
+
+            # 停止录音并获取音频数据
+            audio_data = self.audio_recorder.stop_recording()
+
+            if len(audio_data) > 0:
+                logger.info("✅ 捕获到用户指令音频")
+                return audio_data
+            else:
+                logger.info("⏰ 录音完成，但无音频数据")
+                return None
+
+        except Exception as e:
+            logger.error(f"❌ 监听用户指令失败: {type(e).__name__}: {e}")
+            return None
+
+    async def _check_wake_word(self, audio_data: np.ndarray) -> bool:
+        """检查音频中是否包含唤醒词 - 优先使用阿里云ASR"""
+        try:
+            # 检查冷却时间，避免重复检测
+            current_time = time.time()
+            if current_time - self.last_wake_time < self.wake_cooldown:
+                return False
+
+            wake_word_detected = False
+
+            # 方法1: 优先使用WebSocket ASR（根据架构文档要求）
+            if self.asr_service:
+                try:
+                    # 保存音频到临时文件
+                    wav_data = audio_data.get_wav_data()
+                    temp_file = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+                    temp_file.write(wav_data)
+                    temp_file.close()
+
+                    # 使用WebSocket ASR服务
+                    result = self.asr_service.recognize_audio(temp_file.name)
+
+                    # 清理临时文件
+                    os.unlink(temp_file.name)
+
+                    if result and result.text:
+                        text = result.text.strip().lower()
+                        logger.info(f"🔍 WebSocket ASR识别文本: {text}")
+
+                        # 粤语唤醒词检测（严格白名单，避免误识别）
+                        wake_words = [
+                            "傻强", "傻强啊", "傻强呀", "傻強", "傻強啊", "傻強呀"
+                        ]
+
+                        for wake_word in wake_words:
+                            if wake_word in text:
+                                logger.info(f"✅ WebSocket检测到唤醒词: {wake_word} (原文: {text})")
+                                wake_word_detected = True
+                                self.last_wake_time = current_time
+                                return True
+
+                except Exception as e:
+                    logger.debug(f"⚠️ 阿里云ASR识别异常: {e}")
+
+            # 如果阿里云ASR没有检测到唤醒词，直接返回False
+            logger.debug("❌ 阿里云ASR未检测到唤醒词")
+            return False
+
+        except Exception as e:
+            logger.error(f"❌ 唤醒词检测异常: {e}")
+            return False
+
+    async def _play_wake_confirmation(self):
+        """播放唤醒确认音（已废弃，现在直接播放欢迎语）"""
+        # 此方法已废弃，现在在检测到唤醒词后直接播放完整的欢迎语
+        logger.debug("唤醒确认音功能已整合到欢迎语播放中")
+        pass
+
+    async def _recognize_speech_from_audio(self, audio_data: np.ndarray) -> Optional[str]:
+        """从音频数据进行语音识别"""
+        if not self.asr_service:
+            logger.error("❌ ASR服务未初始化")
+            return None
+
+        try:
+            # 将AudioData转换为WAV格式的字节数据
+            wav_data = audio_data.get_wav_data()
+
+            # 调用阿里云ASR服务进行识别
+            result = self._call_aliyun_asr(wav_data)
+
+            if result and result.strip():
+                logger.info(f"🎯 阿里云ASR识别结果: {result}")
+                return result
+            else:
+                # Fallback到本地识别
+                return self._fallback_local_recognition(audio_data)
+
+        except Exception as e:
+            logger.error(f"❌ 阿里云ASR识别失败: {e}")
+            # 尝试本地fallback
+            return self._fallback_local_recognition(audio_data)
+
+    def _call_aliyun_asr(self, wav_data: bytes) -> Optional[str]:
+        """调用阿里云ASR服务 - WebSocket版本"""
+        try:
+            if not self.asr_service:
+                logger.error("❌ ASR服务未初始化")
+                return None
+
+            logger.info("🔍 调用阿里云ASR WebSocket服务进行识别...")
+
+            # 保存音频数据到临时文件（WebSocket API需要文件路径）
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                temp_file.write(wav_data)
+                temp_file_path = temp_file.name
+
+            try:
+                # 调用WebSocket ASR服务
+                result = self.asr_service.recognize_file(
+                    audio_file_path=temp_file_path,
+                    language="cn-cantonese",
+                    format="wav"
+                )
+
+                # WebSocket API返回直接文本结果
+                if result and result.strip():
+                    logger.info(f"✅ 阿里云ASR WebSocket识别成功: {result}")
+                    return result
+                else:
+                    logger.warning("⚠️ 阿里云ASR WebSocket识别返回空结果")
+                    return None
+
+            finally:
+                # 清理临时文件
+                import os
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+
+        except Exception as e:
+            logger.error(f"❌ 阿里云ASR WebSocket调用失败: {e}")
+            return None
+
+    def _fallback_local_recognition(self, audio_data: np.ndarray) -> Optional[str]:
+        """本地语音识别作为fallback - 已禁用，使用ThreadSafeAudioRecorder"""
+        # TODO: 实现基于ThreadSafeAudioRecorder的本地识别
+        logger.warning("⚠️ 本地识别功能暂时禁用，使用主要ASR服务")
+        return None
+
+    async def _recognize_speech(self) -> Optional[str]:
+        """语音识别（兼容旧接口）"""
+        try:
+            # 监听音频并进行识别
+            audio_data = await self._listen_for_audio()
+            if audio_data:
+                return await self._recognize_speech_from_audio(audio_data)
+            return None
+        except Exception as e:
+            logger.error(f"语音识别失败: {e}")
+            return None
+
+    async def _process_command(self, text: str) -> Optional[str]:
+        """处理语音命令 - 使用多模态LLM"""
+        try:
+            if not self.llm_client:
+                # 如果LLM不可用，使用基础回复
+                return await self._basic_command_response(text)
+
+            # 添加对话历史
+            self.conversation_history.append({
+                "role": "user",
+                "content": text
+            })
+
+            # 限制历史长度
+            if len(self.conversation_history) > self.max_history_length:
+                self.conversation_history = self.conversation_history[-self.max_history_length:]
+
+            # 使用多模态LLM处理
+            response = await self.llm_client.process_voice_command(
+                text=text,
+                previous_context=self.conversation_history[:-1]  # 排除当前用户消息
+            )
+
+            # 添加助手回复到历史
+            if response:
+                self.conversation_history.append({
+                    "role": "assistant",
+                    "content": response
+                })
+
+                logger.info(f"🤖 LLM处理: {text[:30]}... -> {response[:50]}...")
+                return response
+            else:
+                return "抱歉，我现在无法处理这个问题，请稍后再试。"
+
+        except Exception as e:
+            logger.error(f"❌ LLM命令处理失败: {e}")
+            return "系统遇到问题，请稍后再试。"
+
+    async def _basic_command_response(self, text: str) -> Optional[str]:
+        """基础命令回复（LLM不可用时的fallback）"""
+        try:
+            text_lower = text.lower()
+
+            if "天气" in text_lower:
+                return await self.llm_client.get_weather_response() if self.llm_client else "今日天气晴朗，温度适宜，适合出行"
+            elif "时间" in text_lower or "几时" in text_lower:
+                return await self.llm_client.get_time_response() if self.llm_client else await self._get_current_time()
+            elif "你好" in text_lower or "哈喽" in text_lower or "hello" in text_lower:
+                return "你好！我是傻强，有什么可以帮到你？"
+            elif "拜拜" in text_lower or "再见" in text_lower:
+                return "拜拜！有需要随时叫我傻强！"
+            elif "感谢" in text_lower or "多谢" in text_lower:
+                return "不客气！这是傻强应该做的。"
+            else:
+                return "抱歉，我没有理解您的指令，请重新说一次。"
+
+        except Exception as e:
+            logger.error(f"❌ 基础命令回复失败: {e}")
+            return "抱歉，我现在无法处理这个问题。"
+
+    async def _get_current_time(self) -> str:
+        """获取当前时间"""
+        try:
+            import datetime
+            now = datetime.datetime.now()
+            return f"现在时间是{now.strftime('%H点%M分')}"
+        except Exception as e:
+            logger.error(f"❌ 获取时间失败: {e}")
+            return "无法获取当前时间"
+
+    def play_response(self, text: str):
+        """播放语音回复 - 增强版TTS初始化检查"""
+        try:
+            # 增强的TTS客户端检查
+            if not self.tts_client:
+                logger.warning("⚠️ TTS客户端未初始化，尝试重新初始化...")
+
+                # 尝试重新初始化TTS
+                if self._retry_init_tts():
+                    logger.info("✅ TTS客户端重新初始化成功")
+                else:
+                    logger.error("❌ TTS客户端初始化失败，播放备用提示音")
+                    self._play_fallback_sound()
+                    return False
+
+            logger.info(f"🔊 准备播放回复: {text}")
+
+            # 调用TTS服务合成语音
+            try:
+                audio_data = self.tts_client.synthesize(text)
+                if audio_data:
+                    logger.info(f"✅ 合成语音成功，长度: {len(audio_data)}字节")
+
+                    # 播放音频
+                    success = self._play_audio_data(audio_data)
+                    if success:
+                        logger.info("✅ 音频播放成功")
+                        return True
+                    else:
+                        logger.warning("⚠️ 音频播放失败，播放备用提示音")
+                        self._play_fallback_sound()
+                        return False
+                else:
+                    logger.warning("⚠️ 语音合成失败，播放备用提示音")
+                    self._play_fallback_sound()
+                    return False
+
+            except Exception as tts_error:
+                logger.error(f"❌ TTS合成过程出错: {tts_error}")
+                logger.warning("⚠️ 播放备用提示音")
+                self._play_fallback_sound()
+                return False
+
+        except Exception as e:
+            logger.error(f"❌ 语音播放失败: {e}")
+            self._play_fallback_sound()
+            return False
+
+    def _retry_init_tts(self) -> bool:
+        """重新初始化TTS客户端"""
+        try:
+            # 查找TTS配置
+            from modules.tts.engine.aliyun_tts_engine import AliyunTTSEngine
+
+            tts_config = {
+                "voice": "aixiaoming",  # 粤语音色
+                "rate": "0",  # 正常语速
+                "volume": "50",  # 音量
+                "pitch": "0",  # 音调
+                "audio_format": "wav"  # 音频格式
+            }
+
+            # 尝试重新初始化
+            self.tts_client = AliyunTTSEngine(config=tts_config)
+
+            # 测试TTS是否正常工作
+            test_audio = self.tts_client.synthesize("测试")
+            return test_audio is not None
+
+        except Exception as e:
+            logger.error(f"❌ TTS重新初始化失败: {e}")
+            self.tts_client = None
+            return False
+
+    def _play_fallback_sound(self):
+        """播放备用提示音 - 静默模式避免干扰"""
+        # 静默模式：不播放提示音，仅记录日志
+        logger.warning("📢 TTS不可用，跳过语音播放（静默模式）")
+        return False
+
+        # 以下代码保留用于紧急情况，但默认不执行
+        try:
+            # 尝试播放系统提示音或预定义音频文件
+            fallback_paths = [
+                "src/modules/asr/audio/beep.wav",
+                "src/modules/asr/audio/alert.wav",
+                "/usr/share/sounds/alsa/Front_Center.wav"  # Linux系统音
+            ]
+
+            for sound_path in fallback_paths:
+                if os.path.exists(sound_path):
+                    logger.info(f"🔊 播放备用提示音: {sound_path}")
+                    try:
+                        import subprocess
+                        subprocess.run(["aplay", sound_path], check=True, capture_output=True)
+                        return True
+                    except Exception as e:
+                        logger.debug(f"播放备用提示音失败 {sound_path}: {e}")
+                        continue
+
+            # 如果没有音频文件，输出到控制台
+            logger.warning("📢 无可用音频文件，仅输出到控制台: 提示音")
+            print("🔔 *提示音*")
+
+        except Exception as e:
+            logger.error(f"❌ 播放备用提示音失败: {e}")
+            # 最后的备用方案
+            print("🔔 *系统提示音*")
+
+    def _play_audio_data(self, audio_data: bytes) -> bool:
+        """播放音频数据"""
+        try:
+            import pygame
+            import tempfile
+
+            # 初始化pygame音频
+            pygame.mixer.init()
+
+            # 将音频数据保存到临时文件
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                temp_file.write(audio_data)
+                temp_file_path = temp_file.name
+
+            try:
+                # 播放音频文件
+                pygame.mixer.music.load(temp_file_path)
+                pygame.mixer.music.play()
+
+                # 等待播放完成
+                while pygame.mixer.music.get_busy():
+                    pygame.time.Clock().tick(10)
+
+                return True
+
+            finally:
+                # 清理临时文件
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+                pygame.mixer.quit()
+
+        except ImportError:
+            # 如果没有pygame，尝试使用aplay (Linux)
+            try:
+                import tempfile
+                with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+                    temp_file.write(audio_data)
+                    temp_file_path = temp_file.name
+
+                import subprocess
+                result = subprocess.run(['aplay', temp_file_path],
+                                      capture_output=True, text=True)
+
+                os.unlink(temp_file_path)
+                return result.returncode == 0
+
+            except Exception as e:
+                logger.error(f"❌ 使用aplay播放失败: {e}")
+                return False
+
+        except Exception as e:
+            logger.error(f"❌ 音频播放失败: {e}")
+            return False
+
+    def stop(self):
+        """停止ASR系统"""
+        logger.info("🛑 停止ASR系统...")
+
+        # 设置停止标志
+        self.is_running = False
+
+        # 发送停止信号给监听线程
+        if hasattr(self, '_stop_event'):
+            self._stop_event.set()
+
+        # 等待监听线程结束（最多等待5秒）
+        if hasattr(self, '_listening_thread') and self._listening_thread:
+            logger.info("⏳ 等待监听线程停止...")
+            self._listening_thread.join(timeout=5.0)
+            if self._listening_thread.is_alive():
+                logger.warning("⚠️ 监听线程未能在5秒内停止")
+            else:
+                logger.info("✅ 监听线程已停止")
+
+        logger.info("✅ ASR系统已停止")
+
+    def _get_access_token(self) -> str:
+        """获取阿里云访问令牌"""
+        try:
+            import requests
+            from datetime import datetime
+
+            access_key_id = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_ID", "")
+            access_key_secret = os.environ.get("ALIBABA_CLOUD_ACCESS_KEY_SECRET", "")
+
+            if not access_key_id or not access_key_secret:
+                logger.warning("⚠️ 阿里云访问密钥未设置")
+                return ""
+
+            url = "https://nls-meta.cn-shanghai.aliyuncs.com/pop/2018-05-18/tokens"
+            headers = {
+                "Content-Type": "application/json",
+                "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'),
+                "Host": "nls-meta.cn-shanghai.aliyuncs.com"
+            }
+
+            data = {
+                "AccessKeyId": access_key_id,
+                "Action": "CreateToken"
+            }
+
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+
+            if response.status_code == 200:
+                result = response.json()
+                if "Token" in result and "Id" in result["Token"]:
+                    token = result["Token"]["Id"]
+                    logger.info(f"✅ 获取访问令牌成功: {token[:20]}...")
+                    return token
+                else:
+                    logger.error(f"❌ Token响应格式错误: {result}")
+                    return ""
+            else:
+                logger.error(f"❌ 获取Token失败，状态码: {response.status_code}")
+                logger.error(f"响应内容: {response.text}")
+                return ""
+
+        except Exception as e:
+            logger.error(f"❌ 获取访问令牌异常: {e}")
+            return ""
+
+def main():
+    """主函数用于测试"""
+    logging.basicConfig(level=logging.INFO)
+
+    asr_system = ASRSystem()
+
+    if asr_system.initialize():
+        print("✅ ASR系统初始化成功")
+    else:
+        print("❌ ASR系统初始化失败")
+        return False
+
+    # 模拟启动（测试用）
+    print("ASR系统准备就绪")
+    return True
+
+if __name__ == "__main__":
+    main()
