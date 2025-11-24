@@ -32,10 +32,10 @@ which python3         # /usr/bin/python3 ✅
 **发现问题**: 阿里云API密钥在环境变量传递时丢失
 **解决方案**: 手动设置环境变量
 ```bash
-export ALIBABA_CLOUD_ACCESS_KEY_ID="LTAI5tQ4E2YNzZkGn9g1JqeY"
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-export ALIYUN_NLS_APPKEY="4G5BCMccTCW8nC8w"
-export QWEN_API_KEY="sk-600a739fb3f54f338616254c1c69c1f6"
+export ALIBABA_CLOUD_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="YOUR_ACCESS_KEY_SECRET"
+export ALIYUN_NLS_APPKEY="YOUR_NLS_APPKEY"
+export QWEN_API_KEY="YOUR_QWEN_API_KEY"
 ```
 
 #### 1.3 PYTHONPATH配置修复
@@ -114,9 +114,9 @@ bash -c "source install/setup.bash && \
 **测试命令**:
 ```bash
 export PYTHONPATH="/home/sunrise/xlerobot/src:$PYTHONPATH"
-export ALIBABA_CLOUD_ACCESS_KEY_ID="LTAI5tQ4E2YNzZkGn9g1JqeY"
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-export ALIYUN_NLS_APPKEY="4G5BCMccTCW8nC8w"
+export ALIBABA_CLOUD_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="YOUR_ACCESS_KEY_SECRET"
+export ALIYUN_NLS_APPKEY="YOUR_NLS_APPKEY"
 source install/setup.bash
 ros2 run xlerobot asr_bridge_node.py
 ```

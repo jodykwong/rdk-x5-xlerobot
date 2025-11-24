@@ -73,10 +73,10 @@ cmd = ['arecord', '-D', 'default', '-d', '0.1', '-f', 'cd', temp_path]
 ### 测试环境设置
 ```bash
 export PYTHONPATH="/home/sunrise/xlerobot/src:$PYTHONPATH"
-export ALIBABA_CLOUD_ACCESS_KEY_ID="LTAI5tQ4E2YNzZkGn9g1JqeY"
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-export ALIYUN_NLS_APPKEY="4G5BCMccTCW8nC8w"
-export QWEN_API_KEY="sk-600a739fb3f54f338616254c1c69c1f6"
+export ALIBABA_CLOUD_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="YOUR_ACCESS_KEY_SECRET"
+export ALIYUN_NLS_APPKEY="YOUR_NLS_APPKEY"
+export QWEN_API_KEY="YOUR_QWEN_API_KEY"
 source install/setup.bash
 ros2 run xlerobot asr_bridge_node.py
 ```

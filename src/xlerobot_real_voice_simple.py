@@ -21,8 +21,8 @@ import logging
 import threading
 
 # 严禁Mock数据
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "YOUR_ACCESS_KEY_ID"
+os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "YOUR_ACCESS_KEY_SECRET"
 os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
 
 sys.path.insert(0, '/home/sunrise/xlerobot/src')

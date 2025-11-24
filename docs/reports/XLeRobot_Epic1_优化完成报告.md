@@ -93,7 +93,7 @@
 ## ⚠️ 注意事项
 
 ### 重要配置信息
-- **阿里云AppKey**: 4G5BCMccTCW8nC8w
+- **阿里云AppKey**: YOUR_NLS_APPKEY
 - **TTS发音人**: jiajia (粤语女声)
 - **ASR模型**: 粤语（繁体）采样率16K
 - **LLM模型**: 通义千问-turbo

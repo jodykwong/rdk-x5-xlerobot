@@ -369,7 +369,7 @@ Story 1.6 视觉理解集成开发已基本完成，实现了Qwen3-VL-Plus API�
 **修复代码**:
 ```python
 # 修复前
-api_key: str = "sk-600a739fb3f54f338616254c1c69c1f6"
+api_key: str = "YOUR_QWEN_API_KEY"
 
 # 修复后
 api_key: str = ""  # 空字符串，从环境变量读取

@@ -36,7 +36,7 @@
 - **✅ 依赖库**: NumPy, requests, PyAudio等核心依赖已验证
 
 #### 1.2 依赖服务和API可用性
-- **✅ 阿里云ASR API**: AppKey已配置 (4G5BCMccTCW8nC8w)
+- **✅ 阿里云ASR API**: AppKey已配置 (YOUR_NLS_APPKEY)
 - **✅ 网络连接**: 稳定的互联网连接已验证
 - **✅ 认证配置**: Token获取API配置完整
 - **⚠️ 方言模型**: 需要预先验证粤语方言模型可用性

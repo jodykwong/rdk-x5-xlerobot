@@ -31,7 +31,7 @@ def test_api_connection():
     print("-" * 40)
 
     # API配置
-    api_key = "sk-600a739fb3f54f338616254c1c69c1f6"
+    api_key = "YOUR_QWEN_API_KEY"
     base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # 创建测试图像
@@ -140,7 +140,7 @@ def test_stream_api():
     print("-" * 40)
 
     # API配置
-    api_key = "sk-600a739fb3f54f338616254c1c69c1f6"
+    api_key = "YOUR_QWEN_API_KEY"
     base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # 创建测试图像

@@ -1,4 +1,0 @@
-ASR系统端到端测试结果
-测试时间: 2025-11-18 06:55:00
-总体结果: 通过
-详细结果: {'audio_recording': True, 'asr_initialization': True, 'wake_word_detector': True, 'thread_safe_recorder': True, 'audio_manager': False, 'integration_status': True}

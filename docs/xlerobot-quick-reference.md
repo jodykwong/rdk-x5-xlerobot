@@ -636,12 +636,12 @@ export PYTHONPATH="~/xlerobot/src:$PYTHONPATH"
 # 阿里云NLS认证（ASR + TTS共用，从.env加载）
 # 说明: ASR和TTS都使用阿里云NLS服务，共用同一套Token认证系统
 # 认证流程: AccessKey ID/Secret → 获取Token → 调用ASR/TTS服务
-export ALIBABA_CLOUD_ACCESS_KEY_ID="LTAI5tQ4E2YNzZkGn9g1JqeY"      # 用于: ASR + TTS
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI" # 用于: ASR + TTS
-export ALIYUN_NLS_APPKEY="4G5BCMccTCW8nC8w"                        # 用于: ASR + TTS
+export ALIBABA_CLOUD_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"      # 用于: ASR + TTS
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="YOUR_ACCESS_KEY_SECRET" # 用于: ASR + TTS
+export ALIYUN_NLS_APPKEY="YOUR_NLS_APPKEY"                        # 用于: ASR + TTS
 
 # 通义千问LLM认证（独立）
-export QWEN_API_KEY="sk-600a739fb3f54f338616254c1c69c1f6"          # 用于: LLM
+export QWEN_API_KEY="YOUR_QWEN_API_KEY"          # 用于: LLM
 
 # 可选配置
 export ALIYUN_CONFIG_PATH="~/xlerobot/config/aliyun_nls_config.yaml"

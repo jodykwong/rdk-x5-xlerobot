@@ -15,7 +15,7 @@
 1. 修改ASR相关代码前，先阅读 `src/modules/asr/README_CRITICAL.md`
 2. 运行 `tools/verify_critical_config.sh` 验证配置
 3. 不要禁用音频重采样功能
-4. 不要修改AppKey（4G5BCMccTCW8nC8w）
+4. 不要修改AppKey（YOUR_NLS_APPKEY）
 
 **如果400错误再次出现**：
 ```bash

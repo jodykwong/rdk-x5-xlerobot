@@ -21,7 +21,7 @@ os.environ['ROS_DOMAIN_ID'] = '42'
 os.environ['ALIBABA_CLOUD_ACCESS_KEY_ID'] = "YOUR_ACCESS_KEY_ID"
 os.environ['ALIBABA_CLOUD_ACCESS_KEY_SECRET'] = "YOUR_ACCESS_KEY_SECRET"
 os.environ['ALIYUN_NLS_APPKEY'] = "YOUR_NLS_APPKEY"
-os.environ['QWEN_API_KEY'] = "sk-600a739fb3f54f338616254c1c69c1f6"
+os.environ['QWEN_API_KEY'] = "YOUR_QWEN_API_KEY"
 
 def test_component_imports():
     """测试组件导入"""

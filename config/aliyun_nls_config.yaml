@@ -29,10 +29,10 @@ authentication:
     region_id: "cn-shanghai"
 
     # Access Key ID (从阿里云控制台获取)
-    access_key_id: "LTAI5tQ4E2YNzZkGn9g1JqeY"  # ✅ 已配置
+    access_key_id: "YOUR_ACCESS_KEY_ID"  # ⚠️ 请设置您的密钥
 
     # Access Key Secret (从阿里云控制台获取)
-    access_key_secret: "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"  # ✅ 已配置
+    access_key_secret: "YOUR_ACCESS_KEY_SECRET"  # ⚠️ 请设置您的密钥
 
     # Token过期时间(秒)，建议设置为3600(1小时)
     expire_seconds: 3600

@@ -54,7 +54,7 @@ def test_api_integration():
     print("-" * 40)
 
     config = QwenVLConfig(
-        api_key="sk-600a739fb3f54f338616254c1c69c1f6",
+        api_key="YOUR_QWEN_API_KEY",
         timeout=30,
         max_tokens=300
     )
@@ -206,7 +206,7 @@ def test_end_to_end_integration():
     try:
         # 初始化组件
         config = QwenVLConfig(
-            api_key="sk-600a739fb3f54f338616254c1c69c1f6",
+            api_key="YOUR_QWEN_API_KEY",
             max_tokens=400
         )
         client = QwenVLPlusClient(config)

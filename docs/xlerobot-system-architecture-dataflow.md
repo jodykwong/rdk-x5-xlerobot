@@ -243,12 +243,12 @@ fi
 **.env文件示例**:
 ```bash
 # 阿里云语音服务 (ASR/TTS)
-ALIBABA_CLOUD_ACCESS_KEY_ID=LTAI5tQ4E2YNzZkGn9g1JqeY
-ALIBABA_CLOUD_ACCESS_KEY_SECRET=Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI
-ALIYUN_NLS_APPKEY=4G5BCMccTCW8nC8w
+ALIBABA_CLOUD_ACCESS_KEY_ID=YOUR_ACCESS_KEY_ID
+ALIBABA_CLOUD_ACCESS_KEY_SECRET=YOUR_ACCESS_KEY_SECRET
+ALIYUN_NLS_APPKEY=YOUR_NLS_APPKEY
 
 # 通义千问大语言模型
-QWEN_API_KEY=sk-600a739fb3f54f338616254c1c69c1f6
+QWEN_API_KEY=YOUR_QWEN_API_KEY
 ```
 
 ### 2.3 环境检查阶段
@@ -1056,7 +1056,7 @@ async def _call_aliyun_asr(self, wav_data):
 5. ASR API请求
    └─> POST to nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr
        {
-         "appkey": "4G5BCMccTCW8nC8w",
+         "appkey": "YOUR_NLS_APPKEY",
          "token": "1d5397042422435f...",
          "format": "pcm",
          "sample_rate": 16000,
@@ -1586,8 +1586,8 @@ from nls.token import getToken
 
 # 使用AccessKey获取Token
 token = getToken(
-    access_key_id="LTAI5tQ4E2YNzZkGn9g1JqeY",
-    access_key_secret="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
+    access_key_id="YOUR_ACCESS_KEY_ID",
+    access_key_secret="YOUR_ACCESS_KEY_SECRET"
 )
 
 # Token有效期: 24小时
@@ -1602,7 +1602,7 @@ from nls.speech_recognizer import NlsSpeechRecognizer
 # 创建WebSocket识别器
 recognizer = NlsSpeechRecognizer(
     token=token,
-    appkey="4G5BCMccTCW8nC8w",
+    appkey="YOUR_NLS_APPKEY",
     on_start=on_start_callback,
     on_result_changed=on_result_changed_callback,  # 中间结果
     on_completed=on_completed_callback,            # 最终结果
@@ -1734,7 +1734,7 @@ recognizer.stop()
 POST /compatible-mode/v1/chat/completions HTTP/2
 Host: dashscope.aliyuncs.com
 Content-Type: application/json
-Authorization: Bearer sk-600a739fb3f54f338616254c1c69c1f6
+Authorization: Bearer YOUR_QWEN_API_KEY
 ```
 
 **Body (纯文本)**:
@@ -1877,7 +1877,7 @@ from nls.speech_synthesizer import NlsSpeechSynthesizer
 # 创建WebSocket合成器
 synthesizer = NlsSpeechSynthesizer(
     token=token,
-    appkey="4G5BCMccTCW8nC8w",
+    appkey="YOUR_NLS_APPKEY",
     on_start=on_start_callback,
     on_audio_data=on_audio_data_callback,  # 流式接收音频
     on_completed=on_completed_callback,
@@ -2728,12 +2728,12 @@ grep "语音识别失败" logs/xlerobot.log | wc -l
 **必需环境变量**:
 ```bash
 # 阿里云ASR/TTS服务
-ALIBABA_CLOUD_ACCESS_KEY_ID=LTAI5tQ4E2YNzZkGn9g1JqeY
-ALIBABA_CLOUD_ACCESS_KEY_SECRET=Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI
-ALIYUN_NLS_APPKEY=4G5BCMccTCW8nC8w
+ALIBABA_CLOUD_ACCESS_KEY_ID=YOUR_ACCESS_KEY_ID
+ALIBABA_CLOUD_ACCESS_KEY_SECRET=YOUR_ACCESS_KEY_SECRET
+ALIYUN_NLS_APPKEY=YOUR_NLS_APPKEY
 
 # 通义千问LLM服务
-QWEN_API_KEY=sk-600a739fb3f54f338616254c1c69c1f6
+QWEN_API_KEY=YOUR_QWEN_API_KEY
 ```
 
 **可选环境变量**:

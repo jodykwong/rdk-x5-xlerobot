@@ -253,9 +253,9 @@ class AliyunASRWebSocket:
 # 使用示例
 if __name__ == "__main__":
     asr = AliyunASRWebSocket(
-        access_key_id="LTAI5tQ4E2YNzZkGn9g1JqeY",
-        access_key_secret="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI",
-        app_key="4G5BCMccTCW8nC8w"
+        access_key_id="YOUR_ACCESS_KEY_ID",
+        access_key_secret="YOUR_ACCESS_KEY_SECRET",
+        app_key="YOUR_NLS_APPKEY"
     )
 
     result = asr.recognize_audio("test_audio.wav")

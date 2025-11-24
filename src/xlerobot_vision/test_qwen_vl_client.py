@@ -133,7 +133,7 @@ def test_qwen_vl_client():
 
     # 创建配置
     config = QwenVLConfig(
-        api_key="sk-600a739fb3f54f338616254c1c69c1f6",
+        api_key="YOUR_QWEN_API_KEY",
         timeout=15,  # 缩短超时时间用于测试
         retry_times=2
     )

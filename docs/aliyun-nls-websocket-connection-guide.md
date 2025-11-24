@@ -32,8 +32,8 @@ from nls.token import getToken
 
 # 使用官方SDK获取Token
 def get_aliyun_token():
-    access_key_id = "LTAI5tQ4E2YNzZkGn9g1JqeY"
-    access_key_secret = "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
+    access_key_id = "YOUR_ACCESS_KEY_ID"
+    access_key_secret = "YOUR_ACCESS_KEY_SECRET"
 
     token = getToken(access_key_id, access_key_secret)
     return token
@@ -59,7 +59,7 @@ from nls.token import getToken
 WS_URL = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1"
 
 # 应用配置
-APP_KEY = "4G5BCMccTCW8nC8w"
+APP_KEY = "YOUR_NLS_APPKEY"
 ```
 
 ### 完整连接实现

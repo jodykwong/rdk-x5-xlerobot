@@ -102,8 +102,8 @@ Base64编码 (API传输格式)
 #### 2. 请求格式验证
 ```json
 {
-    "appkey": "4G5BCMccTCW8nC8w",
-    "token": "Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI",
+    "appkey": "YOUR_NLS_APPKEY",
+    "token": "YOUR_ACCESS_KEY_SECRET",
     "format": "wav",
     "sample_rate": 16000,
     "language": "zh-cantonese",

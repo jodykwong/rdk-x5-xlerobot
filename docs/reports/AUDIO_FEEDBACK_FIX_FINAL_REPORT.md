@@ -178,9 +178,9 @@
 
 ```bash
 # 启动修复后的语音助手
-export ALIBABA_CLOUD_ACCESS_KEY_ID="LTAI5tQ4E2YNzZkGn9g1JqeY"
-export ALIBABA_CLOUD_ACCESS_KEY_SECRET="Hr1xZdcdz3D9OgFnH1nvWz5rldXVeI"
-export ALIYUN_NLS_APPKEY="4G5BCMccTCW8nC8w"
+export ALIBABA_CLOUD_ACCESS_KEY_ID="YOUR_ACCESS_KEY_ID"
+export ALIBABA_CLOUD_ACCESS_KEY_SECRET="YOUR_ACCESS_KEY_SECRET"
+export ALIYUN_NLS_APPKEY="YOUR_NLS_APPKEY"
 PYTHONPATH="/home/sunrise/xlerobot/src" python3.10 src/xlerobot_real_voice_simple.py
 ```
 
