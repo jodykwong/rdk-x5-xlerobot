@@ -190,61 +190,81 @@ check_environment() {
     # 2. 摄像头设备检查
     log_info "📷 检查摄像头设备和驱动..."
 
-    # 检测平台类型
-    if [ -d "/sys/class/platform" ] && ls /sys/class/platform 2>/dev/null | grep -q "hobot"; then
+    # 检测操作系统平台
+    local platform_os=$(uname -s)
+    local skip_camera_check=false
+
+    if [[ "$platform_os" == "Darwin" ]]; then
+        # macOS开发环境
+        log_info "   📱 检测到macOS开发环境"
+        log_warning "   ⚠️  macOS使用AVFoundation框架，不支持Linux V4L2设备"
+        log_info "   ℹ️  多模态视觉功能将在RDK X5生产环境部署时启用"
+        log_info "   ✅ 跳过V4L2摄像头检查"
+        camera_devices=0
+        skip_camera_check=true
+    elif [ -d "/sys/class/platform" ] && ls /sys/class/platform 2>/dev/null | grep -q "hobot"; then
+        # RDK X5平台
         log_info "   📱 检测到RDK X5平台（使用CSI/MIPI摄像头）"
-        log_info "   ℹ️ RDK X5使用Hobot驱动，无需USB驱动(uvcvideo)"
+        log_info "   ℹ️  RDK X5使用Hobot驱动，无需USB驱动(uvcvideo)"
+        skip_camera_check=false
+    else
+        # 通用Linux平台
+        log_info "   📱 检测到Linux平台"
+        skip_camera_check=false
     fi
 
-    # 检查V4L2核心驱动模块加载状态
-    log_info "   检查V4L2核心驱动:"
-    local driver_modules=("videobuf2_vmalloc" "videobuf2_memops" "videobuf2_v4l2" "videobuf2_common")
-    local loaded_drivers=0
+    # 只在非macOS平台执行V4L2和设备检查
+    if [[ "$skip_camera_check" == "false" ]]; then
+        # 检查V4L2核心驱动模块加载状态
+        log_info "   检查V4L2核心驱动:"
+        local driver_modules=("videobuf2_vmalloc" "videobuf2_memops" "videobuf2_v4l2" "videobuf2_common")
+        local loaded_drivers=0
 
-    # 先检查lsmod命令是否可用，避免卡死
-    if ! command -v lsmod &> /dev/null; then
-        log_warning "   ⚠️ lsmod命令不可用，跳过驱动检查"
-    else
-        for module in "${driver_modules[@]}"; do
-            # 使用更安全的超时机制，避免管道阻塞
-            if timeout 1 bash -c "lsmod 2>/dev/null | grep -q '^$module '" 2>/dev/null; then
-                log_success "   ✅ V4L2驱动: $module"
-                ((loaded_drivers++))
-            else
-                log_warning "   ⚠️ 缺少V4L2驱动: $module（视觉功能可能受限）"
+        # 先检查lsmod命令是否可用，避免卡死
+        if ! command -v lsmod &> /dev/null; then
+            log_warning "   ⚠️ lsmod命令不可用，跳过驱动检查"
+        else
+            for module in "${driver_modules[@]}"; do
+                # 使用更安全的超时机制，避免管道阻塞
+                if timeout 1 bash -c "lsmod 2>/dev/null | grep -q '^$module '" 2>/dev/null; then
+                    log_success "   ✅ V4L2驱动: $module"
+                    ((loaded_drivers++))
+                else
+                    log_warning "   ⚠️ 缺少V4L2驱动: $module（视觉功能可能受限）"
+                fi
+            done
+        fi
+
+        # 检查摄像头设备文件
+        log_info "   检查摄像头设备节点:"
+        camera_devices=0
+        local camera_device_list=""
+
+        for i in {0..9}; do
+            local device_path="/dev/video$i"
+            if [ -e "$device_path" ]; then
+                ((camera_devices++))
+                camera_device_list="$camera_device_list $device_path"
+                log_success "   ✅ 设备节点: $device_path"
+
+                # 检查设备权限 (添加超时保护防止卡死)
+                if timeout 1 bash -c "[ -r '$device_path' ] && [ -w '$device_path' ]" 2>/dev/null; then
+                    log_info "      权限: 可读写 ✅"
+                else
+                    log_warning "      权限: 需要修复或检查超时 ⚠️"
+                    log_info "      修复: sudo usermod -a -G video $USER && sudo chmod 666 $device_path"
+                    ((warnings++))
+                fi
             fi
         done
-    fi
 
-    # 检查摄像头设备文件
-    log_info "   检查摄像头设备节点:"
-    local camera_devices=0
-    local camera_device_list=""
-
-    for i in {0..9}; do
-        local device_path="/dev/video$i"
-        if [ -e "$device_path" ]; then
-            ((camera_devices++))
-            camera_device_list="$camera_device_list $device_path"
-            log_success "   ✅ 设备节点: $device_path"
-
-            # 检查设备权限 (添加超时保护防止卡死)
-            if timeout 1 bash -c "[ -r '$device_path' ] && [ -w '$device_path' ]" 2>/dev/null; then
-                log_info "      权限: 可读写 ✅"
-            else
-                log_warning "      权限: 需要修复或检查超时 ⚠️"
-                log_info "      修复: sudo usermod -a -G video $USER && sudo chmod 666 $device_path"
-                ((warnings++))
-            fi
+        if [ $camera_devices -gt 0 ]; then
+            log_success "✅ 找到 $camera_devices 个摄像头设备: $camera_device_list"
+        else
+            log_warning "⚠️ 未找到摄像头设备节点"
+            log_info "   多模态服务需要摄像头进行视觉理解"
+            ((warnings++))
         fi
-    done
-
-    if [ $camera_devices -gt 0 ]; then
-        log_success "✅ 找到 $camera_devices 个摄像头设备: $camera_device_list"
-    else
-        log_warning "⚠️ 未找到摄像头设备节点"
-        log_info "   多模态服务需要摄像头进行视觉理解"
-        ((warnings++))
     fi
 
     # 3. 系统资源检查
@@ -1297,9 +1317,22 @@ start_service() {
         log_info "📦 安装Python依赖..."
         rosdep install --from-paths src --ignore-src -r -y
 
-        # 编译包
+        # 编译包 - 根据平台选择要编译的包
         log_info "🔨 编译ROS2包..."
-        colcon build --packages-select xlerobot audio_msg --symlink-install
+
+        # 检测操作系统平台
+        local platform_os=$(uname -s)
+        if [[ "$platform_os" == "Darwin" ]]; then
+            # macOS开发环境：跳过camera和vision包（依赖Linux硬件）
+            log_info "   📱 macOS环境：编译核心包（xlerobot, audio_msg）"
+            log_info "   ⏭️  跳过 xlerobot_camera, xlerobot_vision（需要Linux V4L2支持）"
+            colcon build --packages-select xlerobot audio_msg --symlink-install \
+                --packages-skip xlerobot_camera xlerobot_vision
+        else
+            # Linux生产环境：编译所有包
+            log_info "   🐧 Linux环境：编译所有包"
+            colcon build --packages-select xlerobot xlerobot_camera xlerobot_vision audio_msg --symlink-install
+        fi
 
         if [ $? -eq 0 ]; then
             log_success "✅ ROS2包编译成功"
@@ -1437,8 +1470,16 @@ start_service() {
     log_info "  ALIBABA_CLOUD_ACCESS_KEY_ID: ${ALIBABA_CLOUD_ACCESS_KEY_ID:0:10}..."
     log_info "  QWEN_API_KEY: ${QWEN_API_KEY:0:10}..."
 
-    # 直接在当前环境中启动ROS2，确保所有环境变量可用
-    nohup ros2 launch xlerobot voice_assistant.launch.py \
+    # 🔧 修复：使用env命令显式传递环境变量到ROS2子进程
+    # 避免nohup导致的环境变量丢失
+    nohup env \
+        QWEN_API_KEY="$QWEN_API_KEY" \
+        ALIBABA_CLOUD_ACCESS_KEY_ID="$ALIBABA_CLOUD_ACCESS_KEY_ID" \
+        ALIBABA_CLOUD_ACCESS_KEY_SECRET="$ALIBABA_CLOUD_ACCESS_KEY_SECRET" \
+        ALIYUN_NLS_APPKEY="$ALIYUN_NLS_APPKEY" \
+        PYTHONPATH="$PYTHONPATH" \
+        PYTHON_EXECUTABLE="$PYTHON_EXECUTABLE" \
+        ros2 launch xlerobot voice_assistant.launch.py \
         tts_voice:=xiaoyun \
         log_level:=info \
         > "$LOG_FILE" 2>&1 &

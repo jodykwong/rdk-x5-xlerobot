@@ -65,6 +65,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | ASR死循环根本原因 | `asr_system.py:91-92,717-720,1017-1113,698,756` | ✅ 已修复 | TTS播放期间禁用麦克风+回声检测+循环检测+统一能量阈值600 |
 | TTS回调函数命名错误 | `aliyun_tts_websocket.py:417,420,456-457,507,510,553-554` | ✅ 已修复 | `on_start`→`on_metainfo`, `on_audio`→`on_data` (阿里云NLS SDK规范) |
 | TTS文本长度超限 | `aliyun_tts_websocket.py:65-124,314-361,381-430` | ✅ 已修复 | 添加300字符限制检查和智能分段合成 |
+| macOS摄像头检查卡死 | `start_voice_assistant.sh:193-268` | ✅ 已修复 | 平台检测(uname -s)，macOS跳过V4L2检查，避免compgen阻塞 |
+| ROS2编译平台不兼容 | `start_voice_assistant.sh:1320-1342` | ✅ 已修复 | macOS跳过xlerobot_camera/vision包，避免setuptools --editable错误 |
+| 环境变量传递失败 | `voice_assistant.launch.py:66-94`, `start_voice_assistant.sh:1473-1486` | ✅ 已修复 | launch过滤空值，启动脚本使用env命令显式传递 |
 
 ### 二、待修复的核心问题（按优先级排序）
 

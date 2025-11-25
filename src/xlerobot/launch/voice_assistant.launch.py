@@ -64,20 +64,34 @@ def generate_launch_description():
     ]
 
     # 设置环境变量 - 传递关键的API密钥和路径配置
+    # 只设置非空环境变量，避免空值覆盖父shell中的有效值
     env_variables = [
         SetEnvironmentVariable('RCUTILS_CONSOLE_OUTPUT_FORMAT',
                              '[{severity}] [{name}]: {message}'),
         SetEnvironmentVariable('ROS_DOMAIN_ID', '42'),
-        # 确保关键的API密钥被传递到ROS2子进程
-        SetEnvironmentVariable('QWEN_API_KEY', os.environ.get('QWEN_API_KEY', '')),
-        SetEnvironmentVariable('ALIBABA_CLOUD_ACCESS_KEY_ID', os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID', '')),
-        SetEnvironmentVariable('ALIBABA_CLOUD_ACCESS_KEY_SECRET', os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_SECRET', '')),
-        SetEnvironmentVariable('ALIYUN_NLS_APPKEY', os.environ.get('ALIYUN_NLS_APPKEY', '')),
-        # 确保Python路径正确传递
-        SetEnvironmentVariable('PYTHONPATH', os.environ.get('PYTHONPATH', '')),
-        # 确保可执行文件路径正确
-        SetEnvironmentVariable('PYTHON_EXECUTABLE', os.environ.get('PYTHON_EXECUTABLE', '/usr/bin/python3.10')),
     ]
+
+    # 必需的API密钥环境变量，只有非空时才设置
+    api_keys = {
+        'QWEN_API_KEY': os.environ.get('QWEN_API_KEY'),
+        'ALIBABA_CLOUD_ACCESS_KEY_ID': os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID'),
+        'ALIBABA_CLOUD_ACCESS_KEY_SECRET': os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_SECRET'),
+        'ALIYUN_NLS_APPKEY': os.environ.get('ALIYUN_NLS_APPKEY'),
+    }
+
+    for key, value in api_keys.items():
+        if value:  # 只设置非空值
+            env_variables.append(SetEnvironmentVariable(key, value))
+        else:
+            print(f"⚠️  警告: {key} 环境变量未设置")
+
+    # Python路径和可执行文件路径 - 同样只传递非空值
+    pythonpath = os.environ.get('PYTHONPATH')
+    if pythonpath:
+        env_variables.append(SetEnvironmentVariable('PYTHONPATH', pythonpath))
+
+    python_executable = os.environ.get('PYTHON_EXECUTABLE', '/usr/bin/python3.10')
+    env_variables.append(SetEnvironmentVariable('PYTHON_EXECUTABLE', python_executable))
 
     # 设置TTS语音环境变量
     tts_voice_env = SetEnvironmentVariable(
