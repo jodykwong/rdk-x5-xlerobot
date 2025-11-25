@@ -162,3 +162,51 @@ metrics_*
 monitoring_*
 analytics_*
 performance_*
+# ============================================================================
+# 项目清理相关 (2025-11-25添加)
+# ============================================================================
+
+# 归档目录
+tests/archive/
+docs/archive/
+
+# 备份文件 (应由git管理)
+*.backup
+*.backup.*
+*.bak
+*.bak.*
+*_backup_*
+*.orig
+
+# 固定/临时版本
+*.fixed.py
+*_fixed.py
+*_temp.py
+
+# 临时配置
+config/wake_word_config.yaml
+
+# 第一阶段代码 (已归档)
+src/xlerobot_phase1/
+
+# 未跟踪的实验性模块
+src/modules/audio/
+src/modules/common/
+
+# 调试和修复脚本 (一次性使用，仅根目录)
+/debug_*.py
+/fix_*.py
+/quick_*.py
+/direct_*.py
+/test_*.py
+/*_test.py
+/*_debug.py
+
+# 测试结果输出
+*_result.txt
+*_output.txt
+*_test_result.*
+
+# MP3音频文件
+*.mp3
+
