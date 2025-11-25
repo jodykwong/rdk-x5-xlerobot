@@ -210,3 +210,16 @@ src/modules/common/
 # MP3音频文件
 *.mp3
 
+# ============================================================================
+# GLM-4.6安全工具 (2025-11-25移除)
+# ============================================================================
+
+# 安全评估报告
+SECURITY_IMPROVEMENT_SUMMARY.md
+*SECURITY*.md
+
+# 无效的安全工具 (依赖不存在的src/core/security模块)
+tools/security_config_validator.py
+tools/security_auto_fix.py
+tools/code_duplicate_analyzer.py
+
