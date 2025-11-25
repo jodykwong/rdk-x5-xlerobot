@@ -20,16 +20,49 @@ import subprocess
 import logging
 import threading
 
-# 严禁Mock数据
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "YOUR_ACCESS_KEY_ID"
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "YOUR_ACCESS_KEY_SECRET"
-os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+except ImportError:
+    print("❌ 安全配置模块导入失败，请检查模块路径")
+    sys.exit(1)
+
+# 初始化安全配置
+try:
+    init_security_config()
+    security_manager = get_security_manager()
+    logger.info("安全配置初始化成功")
+except Exception as e:
+    print(f"❌ 安全配置初始化失败: {e}")
+    print("请确保环境变量已正确设置")
+    sys.exit(1)
 
 sys.path.insert(0, '/home/sunrise/xlerobot/src')
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+except ImportError:
+    print("❌ 安全配置模块导入失败，请检查模块路径")
+    sys.exit(1)
+
+# 初始化安全配置
+try:
+    init_security_config()
+    security_manager = get_security_manager()
+    logger.info("安全配置初始化成功")
+except Exception as e:
+    print(f"❌ 安全配置初始化失败: {e}")
+    print("请确保环境变量已正确设置")
+    sys.exit(1)
 
 class XleobotSimpleVoiceAssistant:
     """XleRobot简化版真实语音助手"""

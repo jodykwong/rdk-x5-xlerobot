@@ -76,10 +76,16 @@ from modules.asr.asr_system import ASRSystem
 import logging
 import os
 
-# 设置阿里云认证信息
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_ID"] = "YOUR_ACCESS_KEY_ID"
-os.environ["ALIBABA_CLOUD_ACCESS_KEY_SECRET"] = "YOUR_ACCESS_KEY_SECRET"
-os.environ["ALIYUN_NLS_APPKEY"] = "YOUR_NLS_APPKEY"
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+    init_security_config()
+    security_manager = get_security_manager()
+    logger.info("✅ 安全配置验证通过")
+except Exception as e:
+    logger.error(f"❌ 安全配置初始化失败: {e}")
+    raise
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

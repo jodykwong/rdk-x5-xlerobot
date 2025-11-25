@@ -366,7 +366,7 @@ class SystemIntegrationOptimizer:
         """生成缓存键"""
         import hashlib
         combined_data = f"{audio_data or ''}_{image_data or ''}_{text_input or ''}"
-        return hashlib.md5(combined_data.encode()).hexdigest()
+        return hashlib.sha256(combined_data.encode()).hexdigest()
 
     def _record_response_time(self, response_time_ms: int) -> None:
         """记录响应时间"""

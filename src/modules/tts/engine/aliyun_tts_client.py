@@ -42,8 +42,15 @@ class AliyunTTSClient:
         self.access_key_secret = self.config.get('access_key_secret', os.getenv('ALIBABA_CLOUD_ACCESS_KEY_SECRET', ''))
         self.region = self.config.get('region', 'cn-shanghai')
         self.endpoint = f"https://nls-gateway.{self.region}.aliyuncs.com/stream/v1/tts"
-        # 使用正确的appkey (用户提供)
-        self.app_key = self.config.get('app_key', 'YOUR_NLS_APPKEY')
+        # ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+        # 使用安全配置管理器获取appkey
+        try:
+            from core.security.security_config_manager import get_security_manager
+            security_manager = get_security_manager()
+            self.app_key = self.config.get('app_key', security_manager.get_config('aliyun_nls_appkey'))
+        except Exception as e:
+            self.logger.warning(f"安全配置管理器不可用，使用环境变量: {e}")
+            self.app_key = self.config.get('app_key', os.getenv('ALIYUN_NLS_APPKEY', ''))
         # 动态获取Token - 使用Token管理器
         try:
             from aliyun_nls_token_manager import AliyunNLSTokenManager

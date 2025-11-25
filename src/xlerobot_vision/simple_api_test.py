@@ -11,6 +11,18 @@ import os
 import tempfile
 from PIL import Image, ImageDraw
 
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+    init_security_config()
+    security_manager = get_security_manager()
+except Exception as e:
+    print(f'❌ 安全配置初始化失败: {e}')
+    # 根据文件类型决定是否退出
+    import sys
+    sys.exit(1)
+
 
 def create_simple_test_image():
     """创建简单的测试图像"""
@@ -31,7 +43,7 @@ def test_api_connection():
     print("-" * 40)
 
     # API配置
-    api_key = "YOUR_QWEN_API_KEY"
+    # 移除硬编码密钥: api_key = "YOUR_QWEN_API_KEY"
     base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # 创建测试图像
@@ -140,7 +152,7 @@ def test_stream_api():
     print("-" * 40)
 
     # API配置
-    api_key = "YOUR_QWEN_API_KEY"
+    # 移除硬编码密钥: api_key = "YOUR_QWEN_API_KEY"
     base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # 创建测试图像

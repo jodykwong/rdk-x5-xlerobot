@@ -40,9 +40,9 @@ class RealWebSocketTTS:
     def __init__(self):
         """初始化TTS客户端"""
         # API凭证 (来自文档)
-        self.access_key_id = "YOUR_ACCESS_KEY_ID"
+        self.# 移除硬编码密钥: access_key_id = "YOUR_ACCESS_KEY_ID"
         self.access_key_secret = "YOUR_ACCESS_KEY_SECRET"
-        self.app_key = "YOUR_NLS_APPKEY"
+        self.# 移除硬编码密钥: app_key = "YOUR_NLS_APPKEY"
 
         # WebSocket端点
         self.ws_url = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1"
@@ -315,6 +315,18 @@ def run_real_websocket_tts_test():
                     # 播放音频
                     try:
                         import subprocess
+
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+    init_security_config()
+    security_manager = get_security_manager()
+except Exception as e:
+    print(f'❌ 安全配置初始化失败: {e}')
+    # 根据文件类型决定是否退出
+    import sys
+    sys.exit(1)
                         result = subprocess.run(['aplay', str(output_file)],
                                               capture_output=True, text=True, timeout=10)
                         if result.returncode == 0:

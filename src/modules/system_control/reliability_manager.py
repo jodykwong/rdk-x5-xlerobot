@@ -545,7 +545,7 @@ class ReliabilityManager:
             else:
                 data_str = str(data)
 
-            return hashlib.md5(data_str.encode('utf-8')).hexdigest()
+            return hashlib.sha256(data_str.encode('utf-8')).hexdigest()
 
         except Exception as e:
             logger.error("计算校验和失败", error=str(e))

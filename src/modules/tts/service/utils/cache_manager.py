@@ -62,7 +62,7 @@ class TTSCacheManager:
             'sample_rate': params.get('sample_rate', 22050)
         }
         key_str = json.dumps(key_data, sort_keys=True)
-        return hashlib.md5(key_str.encode()).hexdigest()
+        return hashlib.sha256(key_str.encode()).hexdigest()
 
     def get_audio(self, text: str, voice_id: str, **params) -> Optional[Tuple[bytes, Dict[str, Any]]]:
         """

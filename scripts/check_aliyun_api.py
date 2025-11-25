@@ -25,7 +25,7 @@ def check_token_generation():
         from nls.token import getToken
 
         # 使用文档中的真实凭证
-        access_key_id = "YOUR_ACCESS_KEY_ID"
+        # 移除硬编码密钥: access_key_id = "YOUR_ACCESS_KEY_ID"
         access_key_secret = "YOUR_ACCESS_KEY_SECRET"
 
         token = getToken(access_key_id, access_key_secret)
@@ -38,7 +38,7 @@ def check_token_generation():
 
 def check_app_key():
     """检查App Key配置"""
-    app_key = "YOUR_NLS_APPKEY"
+    # 移除硬编码密钥: app_key = "YOUR_NLS_APPKEY"
     if len(app_key) >= 10:
         return True, f"App Key: 有效 ({app_key})"
     else:
@@ -50,9 +50,21 @@ def check_websocket_connection():
         from nls.token import getToken
         from nls.speech_synthesizer import NlsSpeechSynthesizer
 
-        access_key_id = "YOUR_ACCESS_KEY_ID"
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+    init_security_config()
+    security_manager = get_security_manager()
+except Exception as e:
+    print(f'❌ 安全配置初始化失败: {e}')
+    # 根据文件类型决定是否退出
+    import sys
+    sys.exit(1)
+
+        # 移除硬编码密钥: access_key_id = "YOUR_ACCESS_KEY_ID"
         access_key_secret = "YOUR_ACCESS_KEY_SECRET"
-        app_key = "YOUR_NLS_APPKEY"
+        # 移除硬编码密钥: app_key = "YOUR_NLS_APPKEY"
 
         token = getToken(access_key_id, access_key_secret)
         if not token:

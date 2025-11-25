@@ -54,7 +54,7 @@ def test_api_integration():
     print("-" * 40)
 
     config = QwenVLConfig(
-        api_key="YOUR_QWEN_API_KEY",
+        # 移除硬编码密钥: api_key="YOUR_QWEN_API_KEY",
         timeout=30,
         max_tokens=300
     )
@@ -206,7 +206,7 @@ def test_end_to_end_integration():
     try:
         # 初始化组件
         config = QwenVLConfig(
-            api_key="YOUR_QWEN_API_KEY",
+            # 移除硬编码密钥: api_key="YOUR_QWEN_API_KEY",
             max_tokens=400
         )
         client = QwenVLPlusClient(config)
@@ -344,6 +344,18 @@ def main():
     except Exception as e:
         print(f"\n❌ 测试过程中发生错误: {e}")
         import traceback
+
+# ⚠️ 严禁Mock数据 - 本文件必须使用真实硬件和真实API
+# 安全配置导入
+try:
+    from core.security.security_config_manager import init_security_config, get_security_manager
+    init_security_config()
+    security_manager = get_security_manager()
+except Exception as e:
+    print(f'❌ 安全配置初始化失败: {e}')
+    # 根据文件类型决定是否退出
+    import sys
+    sys.exit(1)
         traceback.print_exc()
         return False
 

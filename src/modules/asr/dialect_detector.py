@@ -483,7 +483,7 @@ class CantoneseDialectDetector:
 
             # 随机因子（模拟方言的细微差异）
             import hashlib
-            feature_hash = float(hashlib.md5(str(features.pitch_mean + features.energy_mean).encode()).hexdigest()[:8], 16)
+            feature_hash = float(hashlib.sha256(str(features.pitch_mean + features.energy_mean).encode()).hexdigest()[:8], 16)
             dialect_factor = feature_hash / 1e8
             score += 0.1 * (0.5 + dialect_factor)
 

@@ -104,7 +104,7 @@ class BackupData:
         """计算校验和"""
         if isinstance(self.data, dict) or isinstance(self.data, list):
             serialized = json.dumps(self.data, sort_keys=True).encode('utf-8')
-            self.checksum = hashlib.md5(serialized).hexdigest()
+            self.checksum = hashlib.sha256(serialized).hexdigest()
 
 
 class HealthMonitor:

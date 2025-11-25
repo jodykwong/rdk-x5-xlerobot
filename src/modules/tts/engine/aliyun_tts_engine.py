@@ -278,7 +278,7 @@ class AliyunTTSEngine:
             缓存键
         """
         key_str = text + str(sorted(kwargs.items()))
-        return hashlib.md5(key_str.encode('utf-8')).hexdigest()
+        return hashlib.sha256(key_str.encode('utf-8')).hexdigest()
 
     def synthesize_to_file(self, text: str, output_path: str, **kwargs) -> bool:
         """
