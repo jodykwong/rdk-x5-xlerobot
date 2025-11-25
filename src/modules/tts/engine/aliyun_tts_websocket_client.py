@@ -39,6 +39,68 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# 阿里云TTS文本长度限制
+ALIYUN_TTS_MAX_TEXT_LENGTH = 300  # 单次请求最大300字符
+
+
+def split_text_by_length(text: str, max_length: int = ALIYUN_TTS_MAX_TEXT_LENGTH) -> List[str]:
+    """
+    按照最大长度分割文本，优先在句子边界分割
+
+    Args:
+        text: 待分割文本
+        max_length: 每段最大长度（默认300字符）
+
+    Returns:
+        分割后的文本列表
+    """
+    if len(text) <= max_length:
+        return [text]
+
+    segments = []
+    current_segment = ""
+
+    # 句子分隔符（按优先级）
+    sentence_delimiters = ['。', '！', '？', '；', '\n', '，', ',', ' ']
+
+    # 按句子分割
+    sentences = []
+    temp = text
+    for delimiter in sentence_delimiters[:4]:  # 主要分隔符
+        if delimiter in temp:
+            parts = temp.split(delimiter)
+            for i, part in enumerate(parts[:-1]):
+                sentences.append(part + delimiter)
+            temp = parts[-1]
+            break
+    if temp:
+        sentences.append(temp)
+
+    # 组合句子到段落
+    for sentence in sentences:
+        # 如果单个句子超过限制，强制截断
+        if len(sentence) > max_length:
+            # 按字符强制分割
+            for i in range(0, len(sentence), max_length):
+                segments.append(sentence[i:i+max_length])
+            continue
+
+        # 如果添加当前句子会超过限制
+        if len(current_segment) + len(sentence) > max_length:
+            # 保存当前段落
+            if current_segment:
+                segments.append(current_segment)
+            current_segment = sentence
+        else:
+            current_segment += sentence
+
+    # 添加最后一段
+    if current_segment:
+        segments.append(current_segment)
+
+    return segments if segments else [text]
+
+
 class AliyunTTSWebSocketService:
     """阿里云TTS WebSocket服务 - 严格遵循架构文档规范"""
 

@@ -62,6 +62,67 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# 阿里云TTS文本长度限制
+ALIYUN_TTS_MAX_TEXT_LENGTH = 300  # 单次请求最大300字符
+
+
+def split_text_by_length(text: str, max_length: int = ALIYUN_TTS_MAX_TEXT_LENGTH) -> List[str]:
+    """
+    按照最大长度分割文本，优先在句子边界分割
+
+    Args:
+        text: 待分割文本
+        max_length: 每段最大长度（默认300字符）
+
+    Returns:
+        分割后的文本列表
+    """
+    if len(text) <= max_length:
+        return [text]
+
+    segments = []
+    current_segment = ""
+
+    # 句子分隔符（按优先级）
+    sentence_delimiters = ['。', '！', '？', '；', '\n', '，', ',', ' ']
+
+    # 按句子分割
+    sentences = []
+    temp = text
+    for delimiter in sentence_delimiters[:4]:  # 主要分隔符
+        if delimiter in temp:
+            parts = temp.split(delimiter)
+            for i, part in enumerate(parts[:-1]):
+                sentences.append(part + delimiter)
+            temp = parts[-1]
+            break
+    if temp:
+        sentences.append(temp)
+
+    # 组合句子到段落
+    for sentence in sentences:
+        # 如果单个句子超过限制，强制截断
+        if len(sentence) > max_length:
+            # 按字符强制分割
+            for i in range(0, len(sentence), max_length):
+                segments.append(sentence[i:i+max_length])
+            continue
+
+        # 如果添加当前句子会超过限制
+        if len(current_segment) + len(sentence) > max_length:
+            # 保存当前段落
+            if current_segment:
+                segments.append(current_segment)
+            current_segment = sentence
+        else:
+            current_segment += sentence
+
+    # 添加最后一段
+    if current_segment:
+        segments.append(current_segment)
+
+    return segments if segments else [text]
+
 @dataclass
 class TTSResult:
     """TTS合成结果"""
@@ -311,16 +372,54 @@ class WebSocketTTSService:
             if not text or not text.strip():
                 return TTSResult(success=False, error="文本为空", text=text, voice=voice)
 
-            # 执行WebSocket合成
-            result = self._websocket_synthesize(
-                text=text,
-                voice=voice,
-                volume=volume,
-                rate=rate,
-                pitch=pitch,
-                format=format,
-                sample_rate=sample_rate
-            )
+            # 检查文本长度并分段处理
+            if len(text) > ALIYUN_TTS_MAX_TEXT_LENGTH:
+                logger.info(f"📏 文本长度{len(text)}字符，超过{ALIYUN_TTS_MAX_TEXT_LENGTH}字符限制，进行分段合成")
+                text_segments = split_text_by_length(text, ALIYUN_TTS_MAX_TEXT_LENGTH)
+                logger.info(f"📋 文本分为{len(text_segments)}段")
+
+                # 合成所有段落
+                combined_result = TTSResult(text=text, voice=voice)
+                combined_audio = b""
+
+                for i, segment in enumerate(text_segments):
+                    logger.info(f"🎤 合成第{i+1}/{len(text_segments)}段: '{segment[:30]}...' ({len(segment)}字符)")
+                    segment_result = self._websocket_synthesize(
+                        text=segment,
+                        voice=voice,
+                        volume=volume,
+                        rate=rate,
+                        pitch=pitch,
+                        format=format,
+                        sample_rate=sample_rate
+                    )
+
+                    if segment_result.success:
+                        combined_audio += segment_result.audio_data
+                    else:
+                        # 如果某段失败，返回错误
+                        combined_result.error = f"第{i+1}段合成失败: {segment_result.error}"
+                        combined_result.success = False
+                        logger.error(f"❌ {combined_result.error}")
+                        return combined_result
+
+                # 所有段落合成成功
+                combined_result.success = True
+                combined_result.audio_data = combined_audio
+                combined_result.raw_response = {"segments": len(text_segments)}
+                logger.info(f"✅ 分段合成完成，总音频大小: {len(combined_audio)} 字节")
+                result = combined_result
+            else:
+                # 单次合成
+                result = self._websocket_synthesize(
+                    text=text,
+                    voice=voice,
+                    volume=volume,
+                    rate=rate,
+                    pitch=pitch,
+                    format=format,
+                    sample_rate=sample_rate
+                )
 
             # 更新性能指标
             synthesis_time = time.time() - start_time
@@ -378,16 +477,56 @@ class WebSocketTTSService:
             if not text or not text.strip():
                 return StreamingTTSResult(success=False, error="文本为空", text=text, voice=voice)
 
-            # 执行流式合成
-            result = self._websocket_streaming_synthesize(
-                text=text,
-                voice=voice,
-                volume=volume,
-                rate=rate,
-                pitch=pitch,
-                format=format,
-                sample_rate=sample_rate
-            )
+            # 检查文本长度并分段处理
+            if len(text) > ALIYUN_TTS_MAX_TEXT_LENGTH:
+                logger.info(f"📏 流式合成文本长度{len(text)}字符，超过{ALIYUN_TTS_MAX_TEXT_LENGTH}字符限制，进行分段处理")
+                text_segments = split_text_by_length(text, ALIYUN_TTS_MAX_TEXT_LENGTH)
+                logger.info(f"📋 文本分为{len(text_segments)}段进行流式合成")
+
+                # 流式合成所有段落
+                combined_result = StreamingTTSResult(text=text, voice=voice)
+                all_audio_chunks = []
+
+                for i, segment in enumerate(text_segments):
+                    logger.info(f"🌊 流式合成第{i+1}/{len(text_segments)}段: '{segment[:30]}...' ({len(segment)}字符)")
+                    segment_result = self._websocket_streaming_synthesize(
+                        text=segment,
+                        voice=voice,
+                        volume=volume,
+                        rate=rate,
+                        pitch=pitch,
+                        format=format,
+                        sample_rate=sample_rate
+                    )
+
+                    if segment_result.success:
+                        all_audio_chunks.extend(segment_result.audio_chunks)
+                        combined_result.received_chunks += segment_result.received_chunks
+                    else:
+                        # 如果某段失败，返回错误
+                        combined_result.error = f"第{i+1}段流式合成失败: {segment_result.error}"
+                        combined_result.success = False
+                        logger.error(f"❌ {combined_result.error}")
+                        return combined_result
+
+                # 所有段落合成成功
+                combined_result.success = True
+                combined_result.audio_chunks = all_audio_chunks
+                combined_result.total_chunks = len(all_audio_chunks)
+                combined_result.raw_response = {"segments": len(text_segments)}
+                logger.info(f"✅ 分段流式合成完成，总音频块数: {combined_result.total_chunks}")
+                result = combined_result
+            else:
+                # 单次流式合成
+                result = self._websocket_streaming_synthesize(
+                    text=text,
+                    voice=voice,
+                    volume=volume,
+                    rate=rate,
+                    pitch=pitch,
+                    format=format,
+                    sample_rate=sample_rate
+                )
 
             # 更新性能指标
             synthesis_time = time.time() - start_time
@@ -414,10 +553,10 @@ class WebSocketTTSService:
         result = TTSResult(text=params.get('text', ''), voice=params.get('voice', ''))
         result_queue = queue.Queue()
 
-        def on_start(message, *args):
+        def on_metainfo(message, *args):
             logger.info("🔊 WebSocket合成开始")
 
-        def on_audio(data, *args):
+        def on_data(data, *args):
             """音频数据回调"""
             if isinstance(data, bytes):
                 result.audio_data += data
@@ -453,8 +592,8 @@ class WebSocketTTSService:
             synthesizer = NlsSpeechSynthesizer(
                 token=self.token,
                 appkey=self.app_key,
-                on_start=on_start,
-                on_audio=on_audio,
+                on_metainfo=on_metainfo,
+                on_data=on_data,
                 on_completed=on_completed,
                 on_error=on_error
             )
@@ -504,10 +643,10 @@ class WebSocketTTSService:
         if self.enable_playback and self.audio_player:
             self.audio_player.start_playback()
 
-        def on_start(message, *args):
+        def on_metainfo(message, *args):
             logger.info("🌊 WebSocket流式合成开始")
 
-        def on_audio(data, *args):
+        def on_data(data, *args):
             """流式音频数据回调"""
             if isinstance(data, bytes):
                 result.audio_chunks.append(data)
@@ -550,8 +689,8 @@ class WebSocketTTSService:
             synthesizer = NlsSpeechSynthesizer(
                 token=self.token,
                 appkey=self.app_key,
-                on_start=on_start,
-                on_audio=on_audio,
+                on_metainfo=on_metainfo,
+                on_data=on_data,
                 on_completed=on_completed,
                 on_error=on_error
             )

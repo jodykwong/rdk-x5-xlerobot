@@ -63,6 +63,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | ASR监听循环异常处理不完善 | `asr_system.py:433-516` | ✅ 已修复 | 为唤醒词检测添加完整异常保护 |
 | RDK X5摄像头检查误导性输出 | `start_voice_assistant.sh:191-217,769-787` | ✅ 已修复 | 移除USB驱动检查，添加平台说明，删除重复代码 |
 | ASR死循环根本原因 | `asr_system.py:91-92,717-720,1017-1113,698,756` | ✅ 已修复 | TTS播放期间禁用麦克风+回声检测+循环检测+统一能量阈值600 |
+| TTS回调函数命名错误 | `aliyun_tts_websocket.py:417,420,456-457,507,510,553-554` | ✅ 已修复 | `on_start`→`on_metainfo`, `on_audio`→`on_data` (阿里云NLS SDK规范) |
+| TTS文本长度超限 | `aliyun_tts_websocket.py:65-124,314-361,381-430` | ✅ 已修复 | 添加300字符限制检查和智能分段合成 |
 
 ### 二、待修复的核心问题（按优先级排序）
 
