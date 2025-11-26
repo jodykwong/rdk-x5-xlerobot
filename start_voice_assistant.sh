@@ -816,7 +816,8 @@ check_environment() {
         if command -v v4l2-ctl &> /dev/null; then
             log_info "   摄像设备详细信息:"
             # 先检查是否有摄像头设备，避免v4l2-ctl卡死
-            if compgen -G "/dev/video*" > /dev/null 2>&1; then
+            # 使用ls替代compgen，兼容RDK X5系统
+            if ls /dev/video* >/dev/null 2>&1; then
                 # 使用更严格的超时和错误处理机制
                 if timeout 2 bash -c 'v4l2-ctl --list-devices 2>/dev/null' 2>/dev/null >/dev/null; then
                     log_success "   ✅ 摄像头信息获取成功"

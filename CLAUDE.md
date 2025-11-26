@@ -68,6 +68,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | macOS摄像头检查卡死 | `start_voice_assistant.sh:193-268` | ✅ 已修复 | 平台检测(uname -s)，macOS跳过V4L2检查，避免compgen阻塞 |
 | ROS2编译平台不兼容 | `start_voice_assistant.sh:1320-1342` | ✅ 已修复 | macOS跳过xlerobot_camera/vision包，避免setuptools --editable错误 |
 | 环境变量传递失败 | `voice_assistant.launch.py:66-94`, `start_voice_assistant.sh:1473-1486` | ✅ 已修复 | launch过滤空值，启动脚本使用env命令显式传递 |
+| RDK X5 compgen命令缺失 | `start_voice_assistant.sh:819-820` | ✅ 已修复 | 使用ls替代compgen检测摄像头设备，避免RDK X5启动卡死 |
 
 ### 二、待修复的核心问题（按优先级排序）
 
